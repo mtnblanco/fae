@@ -3,13 +3,12 @@
  * se usan en la landing, los títulos, el carnet, el manifest y los mensajes.
  */
 export const sitio = {
-  nombre: "La Navaja",
-  nombreCompleto: "La Navaja Barbería",
+  nombre: "FaeBarberShop",
+  nombreCompleto: "FaeBarberShop",
   slogan: "Barbería clásica, oficio de siempre.",
   descripcion:
-    "Sumá sellos con cada corte y ganá premios. Tu carnet de beneficios de La Navaja Barbería, siempre en el celular.",
+    "Sumá sellos con cada corte y ganá premios. Tu carnet de beneficios de FaeBarberShop, siempre en el celular.",
   ciudad: "Chivilcoy",
-  fundada: 2019,
   /** Opcionales: si quedan vacíos, no se muestran. */
   direccion: "",
   horarios: "",

@@ -92,7 +92,7 @@ export default async function Inicio() {
                   <span className="text-right text-[0.6875rem] leading-tight text-arena">
                     Socio n.º <span className="text-marfil">00127</span>
                     <br />
-                    desde {sitio.fundada}
+                    desde {new Date().getFullYear()}
                   </span>
                 </div>
                 <p className="mt-16 font-titulo text-[2rem] leading-none sm:mt-20">Tu nombre</p>

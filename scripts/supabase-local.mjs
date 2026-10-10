@@ -557,6 +557,6 @@ createServer(async (req, res) => {
   }
 }).listen(PUERTO, "127.0.0.1", () => {
   console.log(`\n  Supabase local en http://127.0.0.1:${PUERTO}`);
-  console.log("  Barbero: barbero@lanavaja.test / barbero123");
+  console.log("  Barbero: barbero@faebarbershop.test / barbero123");
   console.log("  Cliente: 2346401122 / cliente123  ·  Primer ingreso: 2346409999 / nuevo1234\n");
 });

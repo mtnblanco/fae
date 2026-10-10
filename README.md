@@ -1,4 +1,4 @@
-# La Navaja · Club de beneficios
+# FaeBarberShop · Club de beneficios
 
 Web de fidelización para una barbería. Cada cliente tiene un **carnet digital** en el celular con un código QR y sellos: el barbero escanea el QR en cada corte, se estampa un sello y, al completar la tarjeta, el cliente gana un premio. Además, el carnet muestra descuentos en comercios amigos.
 
@@ -117,17 +117,17 @@ Para entrar al panel: en la pantalla de ingreso tocá **"¿Sos el barbero? Entr�
 2. Vercel detecta que es Next.js. No cambies nada de _Build Settings_.
 3. Abrí **Environment Variables** y cargá estas variables (los valores son los del paso 2):
 
-   | Nombre                                 | Valor                                                                                   |
-   | -------------------------------------- | --------------------------------------------------------------------------------------- |
-   | `NEXT_PUBLIC_SUPABASE_URL`             | La **Project URL** de Supabase                                                          |
-   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | La **publishable key** (o la anon key)                                                  |
-   | `SUPABASE_SERVICE_ROLE_KEY`            | La **secret key** (o la service_role key)                                               |
-   | `NEXT_PUBLIC_SITE_URL`                 | La dirección de tu web, por ejemplo `https://la-navaja.vercel.app` (sin barra al final) |
+   | Nombre                                 | Valor                                                                                 |
+   | -------------------------------------- | ------------------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_SUPABASE_URL`             | La **Project URL** de Supabase                                                        |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | La **publishable key** (o la anon key)                                                |
+   | `SUPABASE_SERVICE_ROLE_KEY`            | La **secret key** (o la service_role key)                                             |
+   | `NEXT_PUBLIC_SITE_URL`                 | La dirección de tu web, por ejemplo `https://fae-ten.vercel.app` (sin barra al final) |
 
    Si todavía no sabés la dirección final, dejá `NEXT_PUBLIC_SITE_URL` para después del primer deploy (paso 5 de esta lista).
 
 4. Tocá **Deploy** y esperá a que termine (un par de minutos).
-5. Copiá la dirección que te da Vercel (por ejemplo `https://la-navaja.vercel.app`). Si no habías cargado `NEXT_PUBLIC_SITE_URL`, cargala ahora en **Settings → Environment Variables** y hacé **Deployments → ⋯ → Redeploy**.
+5. Copiá la dirección que te da Vercel (por ejemplo `https://fae-ten.vercel.app`). Si no habías cargado `NEXT_PUBLIC_SITE_URL`, cargala ahora en **Settings → Environment Variables** y hacé **Deployments → ⋯ → Redeploy**.
 
 > `NEXT_PUBLIC_SITE_URL` es importante: es la dirección que va dentro del QR de cada carnet y en los mensajes de WhatsApp.
 
@@ -136,9 +136,9 @@ Para entrar al panel: en la pantalla de ingreso tocá **"¿Sos el barbero? Entr�
 ## 7. Agregar el dominio de Vercel en Supabase
 
 1. En Supabase, andá a **Authentication → URL Configuration**.
-2. En **Site URL** poné la dirección de Vercel (por ejemplo `https://la-navaja.vercel.app`).
-3. En **Redirect URLs** tocá **Add URL** y agregá `https://la-navaja.vercel.app/**` (con tu dirección).
-4. Guardá. Si más adelante usás un dominio propio (por ejemplo `carnet.lanavaja.com.ar`), agregalo también acá y actualizá `NEXT_PUBLIC_SITE_URL` en Vercel.
+2. En **Site URL** poné la dirección de Vercel (por ejemplo `https://fae-ten.vercel.app`).
+3. En **Redirect URLs** tocá **Add URL** y agregá `https://fae-ten.vercel.app/**` (con tu dirección).
+4. Guardá. Si más adelante usás un dominio propio (por ejemplo `carnet.faebarbershop.com.ar`), agregalo también acá y actualizá `NEXT_PUBLIC_SITE_URL` en Vercel.
 
 ---
 
@@ -209,11 +209,11 @@ npm run dev               # en otra
 
 Usuarios de ejemplo (del seed):
 
-| Rol                          | Usuario                                           | Contraseña   |
-| ---------------------------- | ------------------------------------------------- | ------------ |
-| Barbero                      | `barbero@lanavaja.test` (tocá "¿Sos el barbero?") | `barbero123` |
-| Cliente                      | `2346401122`                                      | `cliente123` |
-| Cliente en su primer ingreso | `2346409999`                                      | `nuevo1234`  |
+| Rol                          | Usuario                                                | Contraseña   |
+| ---------------------------- | ------------------------------------------------------ | ------------ |
+| Barbero                      | `barbero@faebarbershop.test` (tocá "¿Sos el barbero?") | `barbero123` |
+| Cliente                      | `2346401122`                                           | `cliente123` |
+| Cliente en su primer ingreso | `2346409999`                                           | `nuevo1234`  |
 
 ### Scripts
 

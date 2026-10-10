@@ -90,7 +90,9 @@ export default async function PaginaPanel() {
                 <span className="numeros font-titulo text-3xl text-marfil sm:text-[2.5rem] sm:leading-none">
                   {ind.valor}
                 </span>
-                <span className="mt-1 block text-[0.8125rem] text-arena">{ind.detalle}</span>
+                <span className="mt-1 block text-[0.8125rem] whitespace-nowrap text-arena">
+                  {ind.detalle}
+                </span>
               </dd>
             </div>
           ))}

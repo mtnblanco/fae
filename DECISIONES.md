@@ -12,7 +12,7 @@ Registro de las decisiones que no estaban definidas en el pedido, con el motivo 
 
 ## Marca
 
-- El nombre de la barbería no estaba definido: se usa **"La Navaja"** como placeholder. Se cambia en un solo lugar: `src/config/site.ts` (nombre, slogan, dirección, Instagram, WhatsApp).
+- La barbería se llama **FaeBarberShop** (al principio se usó "La Navaja" como nombre provisorio). Se cambia en un solo lugar: `src/config/site.ts` (nombre, slogan, dirección, Instagram, WhatsApp).
 
 ## Login
 

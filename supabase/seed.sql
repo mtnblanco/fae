@@ -2,7 +2,7 @@
 -- Datos de ejemplo para PROBAR la app. ⚠️ NO correr en producción.
 --
 -- Crea:
---   · 1 barbero:   email barbero@lanavaja.test   / contraseña barbero123
+--   · 1 barbero:   email barbero@faebarbershop.test   / contraseña barbero123
 --   · 12 clientes: teléfono (ver tabla abajo)     / contraseña cliente123
 --   · 1 cliente nuevo que debe cambiar la contraseña:
 --                  teléfono 2346409999            / contraseña nuevo1234
@@ -42,7 +42,7 @@ end;
 $$;
 
 -- ─── Barbero ────────────────────────────────────────────────────────────────
-select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000001', 'barbero@lanavaja.test', 'barbero123');
+select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000001', 'barbero@faebarbershop.test', 'barbero123');
 
 insert into public.perfiles (id, nombre, telefono, rol, debe_cambiar_password, created_at)
 values ('b0000000-0000-4000-8000-000000000001', 'Leandro Ferreyra', null, 'barbero', false, now() - interval '200 days')
