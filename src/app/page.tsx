@@ -1,69 +1,147 @@
-import Image from "next/image";
+import { ArrowRight, QrCode, Store, UserRound } from "lucide-react";
+import Link from "next/link";
+import { GrillaSellos } from "@/components/carnet/sellos";
+import { Logo } from "@/components/marca/logo";
+import { Poste } from "@/components/marca/poste";
+import { Button } from "@/components/ui/button";
+import { sitio } from "@/config/site";
+import { reglaPublica } from "@/lib/datos/publico";
+import { RUTAS } from "@/lib/rutas";
 
-export default function Home() {
+// La regla puede cambiar desde el panel: se revisa cada hora (y al guardarla).
+export const revalidate = 3600;
+
+const PASOS = [
+  {
+    icono: UserRound,
+    titulo: "Te damos de alta",
+    texto: "En tu próximo corte te creamos el carnet. Entrás con tu teléfono y una contraseña.",
+  },
+  {
+    icono: QrCode,
+    titulo: "Mostrás tu QR",
+    texto: "Cada vez que venís, escaneamos tu código y se estampa un sello en tu tarjeta.",
+  },
+  {
+    icono: Store,
+    titulo: "Disfrutás los premios",
+    texto: "Completás la tarjeta y ganás tu premio. Además, tenés descuentos en comercios amigos.",
+  },
+];
+
+export default async function Inicio() {
+  const regla = await reglaPublica();
+  const n = regla.cortes_necesarios;
+  const demoLlenos = Math.max(1, Math.min(n - 1, Math.ceil(n * 0.6)));
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="relative isolate min-h-dvh overflow-x-clip">
+      <div
+        aria-hidden
+        className="textura-grano pointer-events-none absolute inset-0 -z-10 opacity-60"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[36rem] w-[60rem] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(201_161_91/0.16),transparent)]"
+      />
+
+      <header className="contenedor flex h-16 items-center justify-between sm:h-20">
+        <Logo tamano="sm" />
+        <Button asChild variant="outline" size="sm">
+          <Link href={RUTAS.login}>Ingresar</Link>
+        </Button>
+      </header>
+
+      <main id="contenido">
+        <section className="contenedor grid grid-cols-1 items-center gap-12 pt-8 pb-20 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-20 lg:pb-28">
+          <div>
+            <p className="text-[0.9375rem] text-bronce">
+              Club de beneficios de {sitio.nombreCompleto}
+            </p>
+            <h1 className="mt-4 text-[3.25rem] leading-[0.98] tracking-[-0.02em] text-marfil sm:text-7xl lg:text-[5.25rem]">
+              Cada corte suma.
+            </h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-arena">
+              Juntá {n} sellos y llevate{" "}
+              <span className="text-marfil">{regla.descripcion_premio.toLowerCase()}</span>. Tu
+              carnet vive en el celular: sin tarjetas de cartón que se pierden.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <Button asChild size="xl">
+                <Link href={RUTAS.login}>
+                  Ingresar a mi carnet
+                  <ArrowRight aria-hidden />
+                </Link>
+              </Button>
+              <p className="text-sm text-arena">¿Todavía no tenés? Pedíselo a tu barbero.</p>
+            </div>
+          </div>
+
+          {/* El carnet de muestra: el protagonista de la página. */}
+          <div className="relative mx-auto w-full max-w-[22rem] lg:max-w-[26rem]" aria-hidden>
+            <div className="absolute inset-x-6 -bottom-6 h-16 rounded-[50%] bg-black/60 blur-2xl" />
+            <div className="textura-grano relative rotate-[-4deg] overflow-hidden rounded-[1.375rem] bg-nogal p-6 shadow-carnet sm:p-7">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,rgb(226_194_127/0.14),transparent_55%)]" />
+              <div className="pointer-events-none absolute inset-2.5 rounded-[1rem] border border-bronce/35" />
+              <div className="relative">
+                <div className="flex items-start justify-between">
+                  <span className="flex items-center gap-2">
+                    <Poste className="h-7" />
+                    <span className="font-titulo text-lg leading-none">{sitio.nombre}</span>
+                  </span>
+                  <span className="text-right text-[0.6875rem] leading-tight text-arena">
+                    Socio n.º <span className="text-marfil">00127</span>
+                    <br />
+                    desde {sitio.fundada}
+                  </span>
+                </div>
+                <p className="mt-16 font-titulo text-[2rem] leading-none sm:mt-20">Tu nombre</p>
+                <GrillaSellos
+                  total={n}
+                  llenos={demoLlenos}
+                  nuevos={demoLlenos}
+                  tamano="lg"
+                  className="mt-5"
+                />
+                <p className="mt-4 text-sm text-arena">
+                  {demoLlenos} de {n}. Te faltan {n - demoLlenos} para el premio.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="titulo-como" className="border-t border-cuero bg-nogal/40">
+          <div className="contenedor py-16 sm:py-20">
+            <h2 id="titulo-como" className="text-4xl sm:text-5xl">
+              Cómo funciona
+            </h2>
+            <ol className="mt-10 grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8">
+              {PASOS.map((paso, i) => {
+                const Icono = paso.icono;
+                return (
+                  <li key={paso.titulo} className="grid grid-cols-1 content-start gap-3">
+                    <span className="flex items-center gap-3">
+                      <span className="font-titulo text-4xl leading-none text-bronce">{i + 1}</span>
+                      <Icono className="size-5 text-arena" aria-hidden />
+                    </span>
+                    <h3 className="text-2xl text-marfil">{paso.titulo}</h3>
+                    <p className="max-w-xs leading-relaxed text-arena">{paso.texto}</p>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </section>
       </main>
+
+      <footer className="contenedor flex flex-col gap-4 py-10 text-sm text-arena sm:flex-row sm:items-center sm:justify-between">
+        <Logo tamano="sm" />
+        <p>
+          {sitio.nombreCompleto}, {sitio.ciudad}.{sitio.direccion ? ` ${sitio.direccion}.` : ""}
+          {sitio.horarios ? ` ${sitio.horarios}.` : ""}
+        </p>
+      </footer>
     </div>
   );
 }

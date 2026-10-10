@@ -1,26 +1,224 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Sistema de diseño — La Navaja
+   Materiales: cuero, bronce, nogal y la tinta del sello. Un solo tema (oscuro).
+   Todos los colores, radios y sombras se definen acá y en ningún otro lado.
+   ════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta base */
+  --espresso: #15110e; /* fondo */
+  --nogal: #1e1915; /* superficies */
+  --nogal-claro: #28211c; /* superficies elevadas, hover */
+  --cuero: #3a3129; /* bordes */
+  --marfil: #eee6d8; /* texto principal */
+  --arena: #b0a493; /* texto secundario (7:1 sobre el fondo) */
+  --bronce: #c9a15b; /* acento */
+  --bronce-claro: #e2c27f;
+  --bronce-oscuro: #8a6a33;
+  --tinta: #8e2f2b; /* tinta de los sellos (solo gráfico, no texto) */
+  --tinta-clara: #e58a7d; /* errores como texto (AA sobre el fondo) */
+  --salvia: #8fb39a; /* éxito */
+
+  /* Mapeo a los tokens de shadcn/ui */
+  --background: var(--espresso);
+  --foreground: var(--marfil);
+  --card: var(--nogal);
+  --card-foreground: var(--marfil);
+  --popover: var(--nogal);
+  --popover-foreground: var(--marfil);
+  --primary: var(--bronce);
+  --primary-foreground: #1a140c;
+  --secondary: var(--nogal-claro);
+  --secondary-foreground: var(--marfil);
+  --muted: var(--nogal-claro);
+  --muted-foreground: var(--arena);
+  --accent: var(--nogal-claro);
+  --accent-foreground: var(--marfil);
+  --destructive: var(--tinta-clara);
+  --border: var(--cuero);
+  --input: var(--cuero);
+  --ring: var(--bronce);
+  --chart-1: var(--bronce);
+  --chart-2: var(--bronce-claro);
+  --chart-3: var(--arena);
+  --chart-4: var(--tinta);
+  --chart-5: var(--salvia);
+  --sidebar: var(--nogal);
+  --sidebar-foreground: var(--marfil);
+  --sidebar-primary: var(--bronce);
+  --sidebar-primary-foreground: #1a140c;
+  --sidebar-accent: var(--nogal-claro);
+  --sidebar-accent-foreground: var(--marfil);
+  --sidebar-border: var(--cuero);
+  --sidebar-ring: var(--bronce);
+
+  /* Radios: el carnet es el único elemento "objeto"; el resto, más contenido. */
+  --radius: 0.75rem;
+
+  /* Sombras */
+  --sombra-suave: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+  --sombra-elevada: 0 2px 4px rgb(0 0 0 / 0.45), 0 18px 40px -12px rgb(0 0 0 / 0.7);
+  --sombra-carnet:
+    0 1px 0 rgb(255 255 255 / 0.06) inset, 0 -1px 0 rgb(0 0 0 / 0.4) inset,
+    0 30px 60px -20px rgb(0 0 0 / 0.85), 0 12px 24px -12px rgb(0 0 0 / 0.6);
+  --brillo-bronce: 0 0 0 1px rgb(201 161 91 / 0.35), 0 8px 30px -8px rgb(201 161 91 / 0.35);
+
+  /* Espaciados de layout */
+  --gutter: 1rem;
+  --alto-nav-inferior: 4.25rem;
+  --ancho-contenido: 72rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 1.5rem;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Colores de marca como utilidades (bg-bronce, text-arena, etc.) */
+  --color-espresso: var(--espresso);
+  --color-nogal: var(--nogal);
+  --color-nogal-claro: var(--nogal-claro);
+  --color-cuero: var(--cuero);
+  --color-marfil: var(--marfil);
+  --color-arena: var(--arena);
+  --color-bronce: var(--bronce);
+  --color-bronce-claro: var(--bronce-claro);
+  --color-bronce-oscuro: var(--bronce-oscuro);
+  --color-tinta: var(--tinta);
+  --color-tinta-clara: var(--tinta-clara);
+  --color-salvia: var(--salvia);
+
+  --font-sans: var(--font-texto);
+  --font-heading: var(--font-titulo);
+  --font-titulo: var(--font-titulo);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.33);
+  --radius-2xl: calc(var(--radius) * 1.66);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
+
+  --shadow-suave: var(--sombra-suave);
+  --shadow-elevada: var(--sombra-elevada);
+  --shadow-carnet: var(--sombra-carnet);
+  --shadow-bronce: var(--brillo-bronce);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/60;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-normal tracking-[-0.01em] text-balance;
+  }
+  p {
+    @apply text-pretty;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* Foco visible y consistente en toda la app (teclado). */
+  :focus-visible {
+    outline: 2px solid var(--bronce);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(201 161 91 / 0.35);
+    color: var(--marfil);
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Grano de papel/cuero: ruido SVG muy sutil sobre una superficie. */
+  .textura-grano {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .8 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* Contenedor de página con gutter de 16px en mobile. */
+  .contenedor {
+    width: 100%;
+    max-width: var(--ancho-contenido);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .numeros {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Espacio para la barra inferior del panel + el área segura del iPhone. */
+  .pb-nav-inferior {
+    padding-bottom: calc(var(--alto-nav-inferior) + env(safe-area-inset-bottom) + 1.5rem);
+  }
+  .pb-seguro {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
