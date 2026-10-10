@@ -1,4 +1,4 @@
-import { ArrowRight, QrCode, Store, UserRound } from "lucide-react";
+import { ArrowRight, AtSign, MapPin, MessageCircle, QrCode, Store, UserRound } from "lucide-react";
 import Link from "next/link";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Logo } from "@/components/marca/logo";
@@ -135,12 +135,59 @@ export default async function Inicio() {
         </section>
       </main>
 
-      <footer className="contenedor flex flex-col gap-4 py-10 text-sm text-arena sm:flex-row sm:items-center sm:justify-between">
+      <footer className="contenedor grid grid-cols-1 gap-6 border-t border-cuero py-10 text-sm text-arena sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-10">
         <Logo tamano="sm" />
-        <p>
-          {sitio.nombreCompleto}, {sitio.ciudad}.{sitio.direccion ? ` ${sitio.direccion}.` : ""}
-          {sitio.horarios ? ` ${sitio.horarios}.` : ""}
-        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <p className="text-marfil">
+            {sitio.nombreCompleto}, {sitio.ciudad}
+            {sitio.horarios ? `. ${sitio.horarios}` : ""}
+          </p>
+          {sitio.sedes.length > 0 && (
+            <ul className="grid grid-cols-1 gap-1.5">
+              {sitio.sedes.map((sede) => (
+                <li key={sede} className="flex items-center gap-2">
+                  <MapPin className="size-4 shrink-0 text-bronce" aria-hidden />
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sede}, ${sitio.ciudad}, Buenos Aires`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline-offset-4 hover:text-marfil hover:underline"
+                  >
+                    {sede}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <ul className="grid grid-cols-1 gap-1.5">
+          {sitio.whatsapp && (
+            <li>
+              <a
+                href={`https://wa.me/${sitio.whatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:text-marfil hover:underline sm:min-h-0"
+              >
+                <MessageCircle className="size-4 shrink-0 text-bronce" aria-hidden />
+                Reservá tu turno por WhatsApp
+              </a>
+            </li>
+          )}
+          {sitio.instagram && (
+            <li>
+              <a
+                href={`https://www.instagram.com/${sitio.instagram}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:text-marfil hover:underline sm:min-h-0"
+              >
+                <AtSign className="size-4 shrink-0 text-bronce" aria-hidden />
+                {sitio.instagram} en Instagram
+              </a>
+            </li>
+          )}
+        </ul>
       </footer>
     </div>
   );

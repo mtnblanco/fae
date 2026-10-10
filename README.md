@@ -156,7 +156,7 @@ Hacé este recorrido completo una vez (con tu celular y otro dispositivo, o con 
 
 ## 9. Personalizar la barbería
 
-- **Nombre, slogan, ciudad, dirección y horarios:** en [`src/config/site.ts`](src/config/site.ts). Los campos vacíos no se muestran.
+- **Nombre, slogan, ciudad, sedes, horarios, Instagram y WhatsApp de turnos:** en [`src/config/site.ts`](src/config/site.ts). Los campos vacíos no se muestran.
 - **Regla de premios** (cada cuántos cortes y qué premio): desde el panel, en **Premios**. Arranca en "cada 5 cortes, 50% off en el siguiente corte".
 - **Descuentos asociados:** desde el panel, en **Descuentos**.
 - **Colores, tipografías y sombras:** todos los tokens están definidos una sola vez en [`src/app/globals.css`](src/app/globals.css).

@@ -8,11 +8,14 @@ export const sitio = {
   slogan: "Barbería clásica, oficio de siempre.",
   descripcion:
     "Sumá sellos con cada corte y ganá premios. Tu carnet de beneficios de FaeBarberShop, siempre en el celular.",
-  ciudad: "Chivilcoy",
+  ciudad: "La Plata",
   /** Opcionales: si quedan vacíos, no se muestran. */
-  direccion: "",
+  sedes: ["Calle 16 entre 40 y 41", "Calle 45 entre 28 y 29"],
   horarios: "",
-  instagram: "",
+  /** Usuario de Instagram, sin "@". */
+  instagram: "faebarbershop",
+  /** WhatsApp para turnos, en formato internacional y solo dígitos. */
+  whatsapp: "5491144463270",
 } as const;
 
 /** URL pública (sin barra final). En Vercel se completa con NEXT_PUBLIC_SITE_URL. */

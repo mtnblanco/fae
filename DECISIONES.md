@@ -12,7 +12,7 @@ Registro de las decisiones que no estaban definidas en el pedido, con el motivo 
 
 ## Marca
 
-- La barbería se llama **FaeBarberShop** (al principio se usó "La Navaja" como nombre provisorio). Se cambia en un solo lugar: `src/config/site.ts` (nombre, slogan, dirección, Instagram, WhatsApp).
+- La barbería se llama **FaeBarberShop** (al principio se usó "La Navaja" como nombre provisorio). Se cambia en un solo lugar: `src/config/site.ts` (nombre, ciudad, sedes, Instagram, WhatsApp). Ciudad, sedes, Instagram y WhatsApp de turnos se tomaron del perfil @faebarbershop: La Plata, calle 16 e/ 40 y 41 y calle 45 e/ 28 y 29.
 
 ## Login
 
