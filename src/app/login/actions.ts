@@ -18,7 +18,11 @@ export async function iniciarSesion(
   _previo: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
-  const modo = texto(formData, "modo") === "email" ? "email" : "telefono";
+  // Si lo que se escribió tiene "@", es un email aunque el formulario esté en modo teléfono.
+  const modo =
+    texto(formData, "modo") === "email" || texto(formData, "usuario").includes("@")
+      ? "email"
+      : "telefono";
   const crudo = {
     modo,
     usuario: texto(formData, "usuario"),
