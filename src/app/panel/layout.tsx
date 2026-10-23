@@ -4,6 +4,7 @@ import { BotonSalir } from "@/components/comunes/boton-salir";
 import { SaltarAlContenido } from "@/components/comunes/saltar-contenido";
 import { Logo } from "@/components/marca/logo";
 import { NavInferior, NavLateral } from "@/components/panel/nav-panel";
+import { RegistrarServiceWorker } from "@/components/panel/registrar-service-worker";
 import { requireBarbero } from "@/lib/auth";
 import { RUTAS } from "@/lib/rutas";
 
@@ -18,6 +19,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_1fr]">
       <SaltarAlContenido />
+      <RegistrarServiceWorker />
 
       {/* Lateral (desktop) */}
       <aside className="sticky top-0 hidden h-dvh flex-col self-start border-r border-hierro bg-ebano/60 px-4 py-6 lg:flex">
@@ -42,7 +44,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
 
       <div className="min-w-0">
         {/* Barra superior (mobile) */}
-        <header className="sticky top-0 z-30 border-b border-hierro bg-noche/95 lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-hierro bg-noche/95 pt-[env(safe-area-inset-top)] lg:hidden">
           <div className="contenedor flex h-14 items-center justify-between">
             <Logo href={RUTAS.panel} tamano="sm" />
             <div className="flex items-center">

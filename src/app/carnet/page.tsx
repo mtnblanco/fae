@@ -6,6 +6,7 @@ import { ActualizadorCarnet } from "@/components/carnet/actualizador-carnet";
 import { Bienvenida } from "@/components/carnet/bienvenida";
 import { TarjetaCarnet } from "@/components/carnet/tarjeta-carnet";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
+import { TurnoCarnet } from "@/components/turnos/turno-carnet";
 import { HistorialCliente } from "@/components/panel/historial-cliente";
 import { urlDelSitio } from "@/config/site";
 import { requireCliente } from "@/lib/auth";
@@ -50,6 +51,8 @@ export default async function PaginaCarnet() {
         numeroSocio={numeroDeSocio(cliente.id)}
         qrSvg={qrSvg}
       />
+
+      <TurnoCarnet cliente={perfil.nombre} />
 
       <section aria-labelledby="titulo-premios" className="grid grid-cols-1 gap-4">
         <h2 id="titulo-premios" className="text-2xl">

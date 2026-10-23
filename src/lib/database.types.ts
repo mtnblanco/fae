@@ -171,6 +171,73 @@ export type Database = {
         };
         Relationships: [];
       };
+      // ─── Turnos (migración 20261023000200) ───
+      horarios_semanales: {
+        Row: {
+          id: string;
+          barbero_id: string;
+          dia_semana: number;
+          desde: string;
+          hasta: string;
+          duracion_min: number;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      dias_especiales: {
+        Row: {
+          id: string;
+          barbero_id: string;
+          fecha: string;
+          cerrado: boolean;
+          desde: string | null;
+          hasta: string | null;
+          duracion_min: number | null;
+          motivo: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      turnos: {
+        Row: {
+          id: string;
+          barbero_id: string;
+          cliente_id: string | null;
+          tipo: "reserva" | "bloqueo";
+          estado: "reservado" | "atendido" | "cancelado";
+          inicio: string;
+          fin: string;
+          rango: string;
+          nota: string | null;
+          corte_id: string | null;
+          creado_por: string | null;
+          cancelado_por: string | null;
+          cancelado_en: string | null;
+          solicitud_id: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      suscripciones_push: {
+        Row: {
+          id: string;
+          barbero_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          created_at: string;
+          actualizada_en: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: {
       resumen_clientes: {
@@ -237,6 +304,81 @@ export type Database = {
           premios_pendientes: number;
         }[];
       };
+      // ─── Turnos (migración 20261023000200) ───
+      horarios_libres: {
+        Args: { p_barbero: string };
+        Returns: { inicio: string; fin: string }[];
+      };
+      barberos_turnos: {
+        Args: never;
+        Returns: { id: string; nombre: string; es_dueno: boolean; proximo_libre: string | null }[];
+      };
+      reservar_turno: {
+        Args: { p_barbero: string; p_inicio: string; p_solicitud_id?: string };
+        Returns: Database["public"]["Tables"]["turnos"]["Row"];
+      };
+      cancelar_turno: {
+        Args: { p_turno_id: string };
+        Returns: Database["public"]["Tables"]["turnos"]["Row"];
+      };
+      reservar_para_cliente: {
+        Args: {
+          p_barbero: string;
+          p_cliente_id: string;
+          p_inicio: string;
+          p_solicitud_id?: string;
+        };
+        Returns: Database["public"]["Tables"]["turnos"]["Row"];
+      };
+      bloquear_horario: {
+        Args: {
+          p_barbero: string;
+          p_inicio: string;
+          p_fin: string;
+          p_nota?: string | null;
+          p_solicitud_id?: string;
+        };
+        Returns: Database["public"]["Tables"]["turnos"]["Row"];
+      };
+      guardar_horario_semanal: {
+        Args: { p_barbero: string; p_franjas: Json };
+        Returns: undefined;
+      };
+      guardar_dia_especial: {
+        Args: { p_barbero: string; p_fecha: string; p_franjas: Json; p_motivo?: string | null };
+        Returns: undefined;
+      };
+      borrar_dia_especial: { Args: { p_barbero: string; p_fecha: string }; Returns: undefined };
+      mi_proximo_turno: {
+        Args: never;
+        Returns: {
+          id: string;
+          barbero_id: string;
+          barbero_nombre: string;
+          inicio: string;
+          fin: string;
+          puede_cancelar: boolean;
+        }[];
+      };
+      agenda_dia: {
+        Args: { p_barbero: string; p_fecha: string };
+        Returns: {
+          tipo: "libre" | "reserva" | "bloqueo";
+          inicio: string;
+          fin: string;
+          turno_id: string | null;
+          estado: "reservado" | "atendido" | null;
+          cliente_id: string | null;
+          cliente_nombre: string | null;
+          cliente_telefono: string | null;
+          nota: string | null;
+        }[];
+      };
+      guardar_suscripcion_push: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string };
+        Returns: undefined;
+      };
+      borrar_suscripcion_push: { Args: { p_endpoint: string }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
@@ -255,3 +397,11 @@ export type Descuento = Tabla<"descuentos_asociados">;
 export type ResumenCliente = Vista<"resumen_clientes">;
 export type Metricas = Public["Functions"]["metricas_panel"]["Returns"][number];
 export type FilaFacturacion = Public["Functions"]["facturacion"]["Returns"][number];
+
+// Turnos
+export type Turno = Tabla<"turnos">;
+export type HorarioSemanal = Tabla<"horarios_semanales">;
+export type DiaEspecial = Tabla<"dias_especiales">;
+export type FilaAgenda = Public["Functions"]["agenda_dia"]["Returns"][number];
+export type BarberoTurnos = Public["Functions"]["barberos_turnos"]["Returns"][number];
+export type MiTurno = Public["Functions"]["mi_proximo_turno"]["Returns"][number];

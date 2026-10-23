@@ -11,9 +11,13 @@ export const RUTAS = {
   descuentos: "/panel/descuentos",
   reglas: "/panel/reglas",
   caja: "/panel/caja",
+  turnos: "/turnos",
+  agenda: "/panel/agenda",
+  horarios: "/panel/agenda/horarios",
 } as const;
 
 export const rutaCliente = (id: string) => `${RUTAS.clientes}/${id}`;
+export const rutaTurnosBarbero = (id: string) => `${RUTAS.turnos}/${id}`;
 
 /** A dónde va cada usuario después de loguearse. */
 export function destinoSegunPerfil(perfil: { rol: Rol; debe_cambiar_password: boolean }): string {

@@ -20,6 +20,7 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 
@@ -34,7 +35,7 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), "..", "supabase");
 // y los numeric (montos) como número.
 const comoTexto = (v) => v;
 const db = new PGlite({
-  extensions: { pg_trgm, pgcrypto },
+  extensions: { pg_trgm, pgcrypto, btree_gist },
   parsers: { 1082: comoTexto, 1114: comoTexto, 1184: comoTexto, 1700: Number },
 });
 await db.exec(readFileSync(join(raiz, "tests/supabase-stubs.sql"), "utf8"));
@@ -419,7 +420,11 @@ async function manejarRest(req, res, url) {
           [rpc[1]],
         );
         const info = tipo.rows[0];
-        const r = await tx.query(`select * from ${llamada}`, Object.values(args));
+        // Como PostgREST: los objetos y listas viajan como JSON (parámetros jsonb).
+        const valores = Object.values(args).map((v) =>
+          v !== null && typeof v === "object" ? JSON.stringify(v) : v,
+        );
+        const r = await tx.query(`select * from ${llamada}`, valores);
         if (info?.typname === "void") return null;
         if (!info || info.proretset) return r.rows;
         if (info.typtype === "c") return r.rows[0] ?? null;

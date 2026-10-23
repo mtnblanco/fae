@@ -8,7 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: sitio.nombre,
     description: sitio.descripcion,
     id: "/",
-    start_url: RUTAS.login,
+    // ?app: si quien abre es barbero, el proxy lo lleva directo a la agenda.
+    start_url: `${RUTAS.login}?app`,
     scope: "/",
     display: "standalone",
     orientation: "portrait",
@@ -16,6 +17,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#12100c",
     lang: "es-AR",
     categories: ["lifestyle", "shopping"],
+    shortcuts: [
+      { name: "Sacar turno", short_name: "Turnos", url: RUTAS.turnos },
+      { name: "Agenda del día", short_name: "Agenda", url: RUTAS.agenda },
+    ],
     icons: [
       { src: "/iconos/192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/iconos/512.png", sizes: "512x512", type: "image/png", purpose: "any" },
