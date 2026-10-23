@@ -308,15 +308,6 @@
     border-block: 1px solid rgb(201 162 39 / 0.4);
   }
 
-  /* Encendido del cartel: una sola vez, a saltos (sin interpolar). */
-  .encender {
-    animation: encender 1.1s steps(1, end) 0.3s both;
-  }
-  /* Si ya se encendió en esta sesión (ver EncendidoUnico), queda prendido. */
-  [data-encendido] .encender {
-    animation: none;
-  }
-
   /* Sello lleno: disco de neón con la luz en un ::after (se anima su opacidad). */
   .sello-lleno {
     position: relative;
@@ -339,34 +330,6 @@
   /* Línea de lectura del escáner (solo transform: no repinta). */
   .barrido {
     animation: barrido 2.2s ease-in-out infinite alternate;
-  }
-}
-
-@keyframes encender {
-  0% {
-    color: var(--neon-apagado);
-    text-shadow: none;
-  }
-  10% {
-    color: var(--neon-nucleo);
-    text-shadow: var(--brillo-texto);
-  }
-  14% {
-    color: var(--neon-apagado);
-    text-shadow: none;
-  }
-  22% {
-    color: var(--neon-nucleo);
-    text-shadow: var(--brillo-texto);
-  }
-  26% {
-    color: var(--neon-apagado);
-    text-shadow: none;
-  }
-  40%,
-  100% {
-    color: var(--neon-nucleo);
-    text-shadow: var(--brillo-texto);
   }
 }
 
@@ -411,7 +374,6 @@
     scroll-behavior: auto !important;
   }
   /* Sin movimiento, el cartel queda ENCENDIDO (nunca apagado) y la línea, fija. */
-  .encender,
   .sello-nuevo::after,
   .barrido {
     animation: none !important;

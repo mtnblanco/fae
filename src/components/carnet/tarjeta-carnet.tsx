@@ -151,7 +151,7 @@ export function TarjetaCarnet({ cliente, socioDesde, numeroSocio, qrSvg }: Props
           {/* Frente: sellos */}
           <Cara oculta={dadaVuelta} encendida={p.faltan === 0 && p.necesarios > 0}>
             <div className="flex items-start justify-between gap-4">
-              <Logo tamano="sm" luz="oro" />
+              <Logo tamano="sm" />
               <span className="text-right text-[0.6875rem] leading-tight text-arena">
                 Socio n.º <span className="numeros text-marfil">{numeroSocio}</span>
                 <br />

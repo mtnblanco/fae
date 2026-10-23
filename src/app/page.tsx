@@ -2,7 +2,6 @@ import { ArrowRight, AtSign, MapPin, MessageCircle, QrCode, Store, UserRound } f
 import Link from "next/link";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Logo } from "@/components/marca/logo";
-import { EncendidoUnico } from "@/components/marca/encendido-unico";
 import { Button } from "@/components/ui/button";
 import { sitio } from "@/config/site";
 import { reglaPublica } from "@/lib/datos/publico";
@@ -36,7 +35,6 @@ export default async function Inicio() {
 
   return (
     <div className="relative isolate min-h-dvh overflow-x-clip">
-      <EncendidoUnico />
       <div
         aria-hidden
         className="textura-grano pointer-events-none absolute inset-0 -z-10 opacity-50"
@@ -48,7 +46,7 @@ export default async function Inicio() {
       />
 
       <header className="contenedor flex h-16 items-center justify-between sm:h-20">
-        <Logo tamano="sm" encender />
+        <Logo tamano="sm" />
         <Button asChild variant="oro" size="sm">
           <Link href={RUTAS.login}>Ingresar</Link>
         </Button>
@@ -84,7 +82,7 @@ export default async function Inicio() {
               <div className="pointer-events-none absolute inset-2.5 rounded-[1rem] border border-oro/30" />
               <div className="relative">
                 <div className="flex items-start justify-between">
-                  <Logo tamano="sm" luz="oro" />
+                  <Logo tamano="sm" />
                   <span className="text-right text-[0.6875rem] leading-tight text-arena">
                     Socio n.º <span className="text-marfil">00127</span>
                     <br />
