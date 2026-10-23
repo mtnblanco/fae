@@ -2,7 +2,13 @@ import "server-only";
 import webpush from "web-push";
 import { urlDelSitio } from "@/config/site";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { endpointPushValido } from "./endpoints";
 import { type Aviso, enviarATodas, type Suscripcion } from "./envio";
+
+/** Como mucho, los 10 dispositivos más recientes (la base tampoco guarda más). */
+const MAX_DISPOSITIVOS = 10;
+/** Un servicio push real responde en milisegundos: no se espera más. */
+const TIMEOUT_MS = 4000;
 
 /**
  * Notificaciones Web Push a los barberos (VAPID). Sin claves configuradas,
@@ -44,16 +50,22 @@ export async function avisarBarbero(barberoId: string, aviso: Aviso): Promise<vo
     const { data, error } = await admin
       .from("suscripciones_push")
       .select("id, endpoint, p256dh, auth")
-      .eq("barbero_id", barberoId);
+      .eq("barbero_id", barberoId)
+      .order("actualizada_en", { ascending: false })
+      .limit(MAX_DISPOSITIVOS);
     if (error) throw new Error(error.message);
-    const suscripciones = (data ?? []) as Suscripcion[];
+    // Defensa extra (filas viejas o cargadas a mano): nunca se le hace un
+    // pedido a algo que no sea un servicio push.
+    const suscripciones = ((data ?? []) as Suscripcion[]).filter((s) =>
+      endpointPushValido(s.endpoint),
+    );
     if (suscripciones.length === 0) return;
 
     const r = await enviarATodas(suscripciones, aviso, (s, cuerpo) =>
       webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
         cuerpo,
-        { TTL: 60 * 60 * 6, urgency: "high", timeout: 8000 },
+        { TTL: 60 * 60 * 6, urgency: "high", timeout: TIMEOUT_MS },
       ),
     );
     if (r.vencidas.length > 0) {

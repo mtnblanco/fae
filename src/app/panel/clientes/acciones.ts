@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireBarbero, requireDueno } from "@/lib/auth";
+import { barberoActivoEnBase, requireBarbero, requireDueno } from "@/lib/auth";
 import { clienteParaEscaneo } from "@/lib/datos/panel";
 import { aNumero, formatearPesos } from "@/lib/dinero";
 import { ERROR_GENERICO, esDuplicado, mensajeDeErrorDb } from "@/lib/errores";
@@ -11,6 +11,7 @@ import { exito, fallo, type Resultado } from "@/lib/resultado";
 import { RUTAS } from "@/lib/rutas";
 import { createAdminClient, dominioEmailClientes } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { esPasswordTelefono } from "@/lib/password";
 import { emailInterno } from "@/lib/telefono";
 import {
   CORTES_MAX,
@@ -27,6 +28,7 @@ import {
 export type Credenciales = { id: string; nombre: string; telefono: string; password: string };
 
 const TELEFONO_REPETIDO = "Ya hay un cliente con ese teléfono.";
+const SIN_PERMISO = "No tenés permiso para hacer esto.";
 
 function revalidarPanel() {
   revalidatePath(RUTAS.panel, "layout");
@@ -59,6 +61,7 @@ export async function crearCliente(
 
   const { nombre, telefono, password } = parse.data;
   const precio = perfil.es_dueno ? (parse.data.precio ?? null) : null;
+  if (!(await barberoActivoEnBase())) return { estado: "error", mensaje: SIN_PERMISO, valores };
   const admin = createAdminClient();
 
   const { data: creado, error } = await admin.auth.admin.createUser({
@@ -103,6 +106,7 @@ export async function editarCliente(
   if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error), valores };
 
   const { id, nombre, telefono } = parse.data;
+  if (!(await barberoActivoEnBase())) return { estado: "error", mensaje: SIN_PERMISO, valores };
   const admin = createAdminClient();
   const actual = await buscarCliente(admin, id);
   if (!actual) return { estado: "error", mensaje: "No encontramos a ese cliente." };
@@ -177,7 +181,7 @@ export async function resetearPassword(
   _previo: EstadoFormulario<Credenciales>,
   formData: FormData,
 ): Promise<EstadoFormulario<Credenciales>> {
-  await requireBarbero();
+  const { userId } = await requireBarbero();
   const parse = resetPasswordSchema.safeParse({
     id: texto(formData, "id"),
     password: texto(formData, "password"),
@@ -185,9 +189,16 @@ export async function resetearPassword(
   if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error) };
 
   const { id, password } = parse.data;
+  if (!(await barberoActivoEnBase())) return { estado: "error", mensaje: SIN_PERMISO };
   const admin = createAdminClient();
   const cliente = await buscarCliente(admin, id);
   if (!cliente?.telefono) return { estado: "error", mensaje: "No encontramos a ese cliente." };
+  if (esPasswordTelefono(password, cliente.telefono)) {
+    return {
+      estado: "error",
+      errores: { password: ["No uses el teléfono del cliente como contraseña."] },
+    };
+  }
 
   const { error } = await admin.auth.admin.updateUserById(id, { password });
   if (error) return { estado: "error", mensaje: ERROR_GENERICO };
@@ -197,6 +208,26 @@ export async function resetearPassword(
     .update({ debe_cambiar_password: true })
     .eq("id", id);
   if (errorFlag) return { estado: "error", mensaje: ERROR_GENERICO };
+
+  // El caso típico es "perdí el celular" o "alguien entró a mi cuenta": se
+  // cierran todas las sesiones abiertas (ninguna puede renovarse). La que
+  // todavía tenga un token vigente (hasta 1 h) cae en el cambio obligatorio,
+  // que pide esta contraseña temporal.
+  const { error: errorSesiones } = await admin.rpc("revocar_sesiones", { p_usuario: id });
+  if (errorSesiones) {
+    console.error("[reseteo] No se pudieron cerrar las sesiones:", errorSesiones.message);
+    return {
+      estado: "error",
+      mensaje:
+        "La contraseña se cambió, pero no pudimos cerrar las sesiones abiertas del cliente. Probá de nuevo.",
+    };
+  }
+
+  // Registro de quién la reseteó (lo ve el dueño). Si falla, no frena el reseteo.
+  const { error: errorRegistro } = await admin
+    .from("reseteos_password")
+    .insert({ cliente_id: id, barbero_id: userId });
+  if (errorRegistro) console.error("[reseteo] No se registró:", errorRegistro.message);
 
   revalidarPanel();
   return {
@@ -209,6 +240,7 @@ export async function resetearPassword(
 export async function eliminarCliente(id: string): Promise<Resultado> {
   await requireDueno();
   if (!idSchema.safeParse(id).success) return fallo("Cliente inválido.");
+  if (!(await barberoActivoEnBase(true))) return fallo(SIN_PERMISO);
   const admin = createAdminClient();
   if (!(await buscarCliente(admin, id))) return fallo("No encontramos a ese cliente.");
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Gloock, Instrument_Sans, Tilt_Neon } from "next/font/google";
+import { connection } from "next/server";
 import { Toaster } from "@/components/ui/sonner";
 import { sitio, urlDelSitio } from "@/config/site";
 import "./globals.css";
@@ -63,7 +64,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Todas las páginas se arman en el pedido: la Content-Security-Policy usa un
+  // nonce nuevo cada vez (src/proxy.ts) y Next se lo pone a sus scripts. Una
+  // página estática tendría scripts sin nonce y el navegador no los correría.
+  await connection();
   return (
     <html
       lang="es-AR"

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { MONTO_MAX, parsearMonto } from "./dinero";
-import { PASSWORD_MAX, PASSWORD_MIN } from "./password";
+import {
+  esPasswordComun,
+  esPasswordTelefono,
+  MSJ_PASSWORD_COMUN,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+} from "./password";
 import { esTelefonoValido, normalizarTelefono } from "./telefono";
 
 const MSJ_TELEFONO = "Ingresá un teléfono válido, con código de área (ej.: 2346 40-1122).";
@@ -17,7 +23,8 @@ export const passwordSchema = z
   .min(PASSWORD_MIN, {
     error: `La contraseña tiene que tener al menos ${PASSWORD_MIN} caracteres.`,
   })
-  .max(PASSWORD_MAX, { error: `La contraseña puede tener hasta ${PASSWORD_MAX} caracteres.` });
+  .max(PASSWORD_MAX, { error: `La contraseña puede tener hasta ${PASSWORD_MAX} caracteres.` })
+  .refine((p) => !esPasswordComun(p), { error: MSJ_PASSWORD_COMUN });
 
 export const nombreSchema = z
   .string({ error: "Ingresá el nombre." })
@@ -92,11 +99,16 @@ export const clienteSchema = z.object({
   telefono: telefonoSchema,
 });
 
-export const altaClienteSchema = clienteSchema.extend({
-  password: passwordSchema,
-  /** Solo lo carga el dueño; si no viene, el cliente queda sin precio. */
-  precio: montoTextoSchema.optional(),
-});
+export const altaClienteSchema = clienteSchema
+  .extend({
+    password: passwordSchema,
+    /** Solo lo carga el dueño; si no viene, el cliente queda sin precio. */
+    precio: montoTextoSchema.optional(),
+  })
+  .refine((d) => !esPasswordTelefono(d.password, d.telefono), {
+    error: "No uses el teléfono del cliente como contraseña.",
+    path: ["password"],
+  });
 
 export const editarClienteSchema = clienteSchema.extend({
   id: idSchema,

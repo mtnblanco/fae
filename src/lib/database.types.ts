@@ -252,6 +252,19 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      // ─── Seguridad (migración 20261025000100) ───
+      reseteos_password: {
+        Row: { id: string; cliente_id: string; barbero_id: string | null; creado_en: string };
+        Insert: { cliente_id: string; barbero_id?: string | null };
+        Update: never;
+        Relationships: [];
+      };
+      intentos: {
+        Row: { id: number; clave: string; en: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: {
       resumen_clientes: {
@@ -400,6 +413,16 @@ export type Database = {
         Returns: undefined;
       };
       borrar_suscripcion_push: { Args: { p_endpoint: string }; Returns: undefined };
+      // ─── Seguridad (migración 20261025000100; solo service_role) ───
+      revocar_sesiones: { Args: { p_usuario: string }; Returns: number };
+      consumir_intento: {
+        Args: { p_clave: string; p_max: number; p_ventana_seg: number };
+        Returns: number;
+      };
+      limpiar_intentos: {
+        Args: { p_clave: string; p_solo_ultimo?: boolean };
+        Returns: undefined;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

@@ -10,7 +10,12 @@ const utc = (d: Date) =>
     .replace(/\.\d{3}/, "");
 
 const escapar = (texto: string) =>
-  texto.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  texto
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    // \r suelto también corta la línea en algunos calendarios (inyección de campos).
+    .replace(/\r\n|\r|\n/g, "\\n");
 
 export function archivoIcs(turno: {
   id: string;

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireBarbero } from "@/lib/auth";
 import { normalizarBusqueda } from "@/lib/busqueda";
 import { hoyISO } from "@/lib/fechas";
+import { endpointPushValido, ENDPOINT_PUSH_MAX } from "@/lib/push/endpoints";
 import { avisarBarbero } from "@/lib/push/servidor";
 import { exito, fallo, type Resultado } from "@/lib/resultado";
 import { RUTAS } from "@/lib/rutas";
@@ -30,6 +31,8 @@ function revalidarAgenda() {
 }
 
 const linkAgenda = (inicio: string) => `${RUTAS.agenda}?fecha=${fechaTurno(inicio)}`;
+/** Los avisos de un mismo cliente se reemplazan en vez de apilarse. */
+const tagCliente = (clienteId: string) => `cliente-${clienteId}`;
 
 // ─── Turnos de la agenda ────────────────────────────────────────────────────
 
@@ -48,7 +51,7 @@ export async function cancelarTurnoAgenda(turnoId: string): Promise<Resultado> {
         titulo: "Turno cancelado",
         cuerpo: `Se canceló el turno de ${cuandoTurno(data.inicio, hoyISO()).toLowerCase()}`,
         url: linkAgenda(data.inicio),
-        tag: `turno-${data.id}`,
+        tag: tagCliente(data.cliente_id ?? data.id),
       }),
     );
   }
@@ -60,7 +63,8 @@ export async function cancelarTurnoAgenda(turnoId: string): Promise<Resultado> {
 export async function reservarParaCliente(datos: {
   barberoId: string;
   clienteId: string;
-  clienteNombre: string;
+  /** Ya no se usa: el nombre del aviso sale de la base (no del navegador). */
+  clienteNombre?: string;
   inicio: string;
   solicitudId: string;
 }): Promise<Resultado> {
@@ -69,7 +73,6 @@ export async function reservarParaCliente(datos: {
     .object({
       barberoId: uuid,
       clienteId: uuid,
-      clienteNombre: z.string().max(80),
       inicio: instante,
       solicitudId: uuid,
     })
@@ -87,14 +90,20 @@ export async function reservarParaCliente(datos: {
   if (error || !data) return fallo(mensajeDeErrorTurno(error));
 
   if (data.barbero_id !== userId) {
-    after(() =>
-      avisarBarbero(data.barbero_id, {
+    after(async () => {
+      // El nombre, de la base (con la sesión del barbero): no del navegador.
+      const { data: cliente } = await supabase
+        .from("perfiles")
+        .select("nombre")
+        .eq("id", d.clienteId)
+        .maybeSingle();
+      await avisarBarbero(data.barbero_id, {
         titulo: "Nuevo turno",
-        cuerpo: `${cuandoTurno(data.inicio, hoyISO())} · ${d.clienteNombre}`,
+        cuerpo: `${cuandoTurno(data.inicio, hoyISO())}${cliente?.nombre ? ` · ${cliente.nombre}` : ""}`,
         url: linkAgenda(data.inicio),
-        tag: `turno-${data.id}`,
-      }),
-    );
+        tag: tagCliente(d.clienteId),
+      });
+    });
   }
   revalidarAgenda();
   return exito(undefined);
@@ -232,7 +241,8 @@ export async function borrarDiaEspecial(barberoId: string, dia: string): Promise
 // ─── Notificaciones ─────────────────────────────────────────────────────────
 
 const suscripcionSchema = z.object({
-  endpoint: z.url().startsWith("https://").max(1000),
+  // Solo servicios push reales (FCM, Mozilla, Apple, Windows): nada de SSRF.
+  endpoint: z.string().max(ENDPOINT_PUSH_MAX).refine(endpointPushValido),
   keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(4).max(100) }),
 });
 
@@ -255,7 +265,7 @@ export async function guardarSuscripcionPush(suscripcion: unknown): Promise<Resu
 
 export async function borrarSuscripcionPush(endpoint: string): Promise<Resultado> {
   await requireBarbero();
-  if (typeof endpoint !== "string" || endpoint.length > 1000) return exito(undefined);
+  if (typeof endpoint !== "string" || endpoint.length > ENDPOINT_PUSH_MAX) return exito(undefined);
   const supabase = await createClient();
   const { error } = await supabase.rpc("borrar_suscripcion_push", { p_endpoint: endpoint });
   if (error) return fallo(mensajeDeErrorTurno(error));

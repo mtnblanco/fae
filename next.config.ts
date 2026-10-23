@@ -19,7 +19,11 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
+          // Solo https durante 2 años (el navegador lo ignora en http://localhost).
+          // Sin "preload": eso es un compromiso aparte con los navegadores.
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
         ],
+        // La Content-Security-Policy (con nonce) la pone src/proxy.ts.
       },
       {
         // Service worker de las notificaciones: siempre la última versión.

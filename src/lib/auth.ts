@@ -69,3 +69,15 @@ export async function requireCliente(): Promise<Sesion> {
   if (sesion.perfil.rol !== "cliente") redirect(RUTAS.panel);
   return sesion;
 }
+
+/**
+ * Para las acciones que usan la clave de servicio (alta, edición, reseteo y
+ * baja de clientes): confirma EN LA BASE que la cuenta sigue siendo un barbero
+ * activo. El JWT vale hasta una hora aunque el empleado haya sido bloqueado
+ * (`quitar-empleado.sql`); `es_barbero()` / `es_dueno()` miran el bloqueo.
+ */
+export async function barberoActivoEnBase(soloDueno = false): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(soloDueno ? "es_dueno" : "es_barbero");
+  return !error && data === true;
+}

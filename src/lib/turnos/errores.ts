@@ -18,6 +18,11 @@ const MENSAJES_TURNOS: Record<string, string> = {
   fecha_invalida: "Elegí una fecha de hoy en adelante.",
   datos_invalidos: "Revisá los datos e intentá de nuevo.",
   suscripcion_invalida: "Este navegador no permite activar las notificaciones.",
+  demasiadas_reservas:
+    "Ya sacaste varios turnos en las últimas 24 horas. Si necesitás cambiarlo, escribinos por WhatsApp.",
+  demasiadas_cancelaciones:
+    "Ya cancelaste 3 turnos en las últimas 24 horas. Para cancelar este, escribinos por WhatsApp.",
+  cambio_password_pendiente: "Antes de seguir, elegí tu contraseña nueva.",
 };
 
 export function mensajeDeErrorTurno(error: { message?: string; code?: string } | null | undefined) {

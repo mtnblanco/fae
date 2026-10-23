@@ -18,8 +18,8 @@ import { reglaPublica } from "@/lib/datos/publico";
 import { enFrase, textoCortes } from "@/lib/progreso";
 import { RUTAS } from "@/lib/rutas";
 
-// La regla puede cambiar desde el panel: se revisa cada hora (y al guardarla).
-export const revalidate = 3600;
+// Se arma en cada pedido, como todas las páginas: la Content-Security-Policy
+// lleva un nonce nuevo cada vez (ver src/proxy.ts y el layout).
 
 const PASOS = [
   {

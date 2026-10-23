@@ -35,23 +35,28 @@ describe("loginSchema", () => {
 });
 
 describe("cambiarPasswordSchema", () => {
-  it("exige mínimo 6 caracteres y que coincidan", () => {
-    expect(cambiarPasswordSchema.safeParse({ nueva: "12345", confirmacion: "12345" }).success).toBe(
-      false,
-    );
-    expect(
-      cambiarPasswordSchema.safeParse({ nueva: "123456", confirmacion: "123457" }).success,
-    ).toBe(false);
-    expect(
-      cambiarPasswordSchema.safeParse({ nueva: "123456", confirmacion: "123456" }).success,
-    ).toBe(true);
+  it("exige mínimo 8 caracteres y que coincidan", () => {
+    const ok = (nueva: string, confirmacion = nueva) =>
+      cambiarPasswordSchema.safeParse({ nueva, confirmacion }).success;
+    expect(ok("tijera7")).toBe(false);
+    expect(ok("tijera77", "tijera78")).toBe(false);
+    expect(ok("tijera77")).toBe(true);
+  });
+
+  it("rechaza las contraseñas más comunes (sin importar mayúsculas)", () => {
+    const ok = (nueva: string) =>
+      cambiarPasswordSchema.safeParse({ nueva, confirmacion: nueva }).success;
+    for (const p of ["12345678", "Password", "Contraseña", "qwerty123", "aaaaaaaa", "23456789"]) {
+      expect(ok(p), p).toBe(false);
+    }
+    expect(ok("navaja2026")).toBe(true);
   });
 
   it("la nueva tiene que ser distinta a la actual", () => {
     const r = cambiarPasswordSchema.safeParse({
-      actual: "abcdef",
-      nueva: "abcdef",
-      confirmacion: "abcdef",
+      actual: "navaja2026",
+      nueva: "navaja2026",
+      confirmacion: "navaja2026",
     });
     expect(r.success).toBe(false);
   });
@@ -62,9 +67,18 @@ describe("altaClienteSchema", () => {
     const r = altaClienteSchema.parse({
       nombre: "  Juan   Pérez ",
       telefono: "02346 401122",
-      password: "abc123",
+      password: "k7m2p9qa",
     });
-    expect(r).toEqual({ nombre: "Juan Pérez", telefono: "2346401122", password: "abc123" });
+    expect(r).toEqual({ nombre: "Juan Pérez", telefono: "2346401122", password: "k7m2p9qa" });
+  });
+
+  it("no acepta el teléfono del cliente como contraseña", () => {
+    const r = altaClienteSchema.safeParse({
+      nombre: "Juan Pérez",
+      telefono: "2346401122",
+      password: "2346 40-1122",
+    });
+    expect(r.success).toBe(false);
   });
 });
 
@@ -154,7 +168,7 @@ describe("montos y precios", () => {
   });
 
   it("el alta acepta un precio opcional", () => {
-    const base = { nombre: "Juan Pérez", telefono: "2346401122", password: "abc12345" };
+    const base = { nombre: "Juan Pérez", telefono: "2346401122", password: "k7m2p9qa" };
     expect(altaClienteSchema.parse(base).precio).toBeUndefined();
     expect(altaClienteSchema.parse({ ...base, precio: "9.000" }).precio).toBe(9000);
     expect(altaClienteSchema.safeParse({ ...base, precio: "x" }).success).toBe(false);

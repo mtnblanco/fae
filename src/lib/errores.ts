@@ -21,6 +21,7 @@ const MENSAJES_DB: Record<string, string> = {
   corte_ajeno: "Solo podés deshacer los cortes que cargaste vos.",
   monto_invalido: "Revisá el monto: escribilo como 8.000 o 8.500,50.",
   periodo_invalido: "El período elegido no es válido.",
+  cambio_password_pendiente: "Antes de seguir, elegí tu contraseña nueva.",
 };
 
 export const ERROR_GENERICO = "Algo salió mal. Probá de nuevo en un momento.";
@@ -45,6 +46,8 @@ const MENSAJES_AUTH: Record<string, string> = {
   weak_password: "Esa contraseña es muy débil. Probá con una más larga.",
   over_request_rate_limit: "Hubo demasiados intentos. Esperá unos minutos y probá de nuevo.",
   over_email_send_rate_limit: "Hubo demasiados intentos. Esperá unos minutos y probá de nuevo.",
+  reauthentication_needed:
+    "Por seguridad, cerrá sesión, volvé a entrar y cambiá la contraseña enseguida.",
 };
 
 export function mensajeDeErrorAuth(error: ErrorConMensaje): string {

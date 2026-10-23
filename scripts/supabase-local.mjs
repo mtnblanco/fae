@@ -14,7 +14,7 @@
 //
 // ⚠️ Solo para tu computadora. No es seguro ni completo: no lo publiques.
 // ════════════════════════════════════════════════════════════════════════════
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
@@ -50,7 +50,7 @@ await db.exec(`grant all on all tables in schema public to service_role;
 const b64 = (x) => Buffer.from(typeof x === "string" ? x : JSON.stringify(x)).toString("base64url");
 const firmar = (datos) => createHmac("sha256", SECRETO_JWT).update(datos).digest("base64url");
 
-function crearJwt(usuario) {
+function crearJwt(usuario, sesionId) {
   const ahora = Math.floor(Date.now() / 1000);
   const cuerpo = `${b64({ alg: "HS256", typ: "JWT" })}.${b64({
     sub: usuario.id,
@@ -59,7 +59,7 @@ function crearJwt(usuario) {
     aud: "authenticated",
     iat: ahora,
     exp: ahora + DURACION_TOKEN,
-    session_id: randomUUID(),
+    session_id: sesionId,
   })}`;
   return `${cuerpo}.${firmar(cuerpo)}`;
 }
@@ -74,7 +74,10 @@ function verificarJwt(token) {
   return claims.exp > Date.now() / 1000 ? claims : null;
 }
 
-const refreshTokens = new Map();
+// Sesiones y refresh tokens en auth.sessions / auth.refresh_tokens, como en
+// Supabase: borrar una sesión (revocar_sesiones, logout) invalida su refresh
+// token, y /auth/v1/user (que usa getClaims con HS256) rechaza el JWT de una
+// sesión que ya no existe ("session_not_found"), igual que GoTrue.
 
 // ─── Utilidades HTTP ────────────────────────────────────────────────────────
 const CORS = {
@@ -145,11 +148,20 @@ function formatoUsuario(u) {
   };
 }
 
-function sesionPara(usuario) {
+async function sesionPara(usuario, sesionId) {
+  if (!sesionId) {
+    const r = await db.query(`insert into auth.sessions (user_id) values ($1) returning id`, [
+      usuario.id,
+    ]);
+    sesionId = r.rows[0].id;
+  }
   const refresh = randomBytes(24).toString("base64url");
-  refreshTokens.set(refresh, usuario.id);
+  await db.query(
+    `insert into auth.refresh_tokens (token, user_id, session_id) values ($1, $2, $3)`,
+    [refresh, usuario.id, sesionId],
+  );
   return {
-    access_token: crearJwt(usuario),
+    access_token: crearJwt(usuario, sesionId),
     token_type: "bearer",
     expires_in: DURACION_TOKEN,
     expires_at: Math.floor(Date.now() / 1000) + DURACION_TOKEN,
@@ -166,32 +178,55 @@ async function manejarAuth(req, res, url) {
     const cuerpo = await leerCuerpo(req);
     if (url.searchParams.get("grant_type") === "password") {
       const r = await db.query(
-        `select id, email, created_at, updated_at from auth.users
+        `select id, email, created_at, updated_at, banned_until > now() as bloqueado from auth.users
          where lower(email) = lower($1) and encrypted_password = extensions.crypt($2, encrypted_password)`,
         [cuerpo.email ?? "", cuerpo.password ?? ""],
       );
       if (!r.rows[0])
         return errorAuth(res, 400, "invalid_credentials", "Invalid login credentials");
-      return responder(res, 200, sesionPara(r.rows[0]));
+      if (r.rows[0].bloqueado) return errorAuth(res, 400, "user_banned", "User is banned");
+      return responder(res, 200, await sesionPara(r.rows[0]));
     }
     if (url.searchParams.get("grant_type") === "refresh_token") {
-      const id = refreshTokens.get(cuerpo.refresh_token);
-      const usuario = id && (await usuarioPorId(id));
+      // Rotación: el token usado se borra y se entrega uno nuevo de la misma sesión.
+      const r = await db.query(
+        `delete from auth.refresh_tokens t using auth.sessions s, auth.users u
+         where t.token = $1 and s.id = t.session_id and u.id = s.user_id
+           and (u.banned_until is null or u.banned_until <= now())
+         returning t.session_id, t.user_id`,
+        [cuerpo.refresh_token ?? ""],
+      );
+      const usuario = r.rows[0] && (await usuarioPorId(r.rows[0].user_id));
       if (!usuario) return errorAuth(res, 400, "refresh_token_not_found", "Invalid Refresh Token");
-      return responder(res, 200, sesionPara(usuario));
+      return responder(res, 200, await sesionPara(usuario, r.rows[0].session_id));
     }
     return errorAuth(res, 400, "unsupported_grant_type", "Unsupported grant type");
   }
 
+  // GoTrue rechaza el JWT de una sesión que ya no existe (revocada o cerrada).
+  const sesionVigente = async () =>
+    Boolean(
+      quien?.claims?.session_id &&
+      (await db.query(`select 1 from auth.sessions where id = $1`, [quien.claims.session_id])).rows
+        .length,
+    );
+
   if (ruta === "/user") {
     if (!quien?.claims) return errorAuth(res, 401, "no_authorization", "Unauthorized");
+    if (!(await sesionVigente()))
+      return errorAuth(
+        res,
+        403,
+        "session_not_found",
+        "Session from session_id claim in JWT does not exist",
+      );
     const usuario = await usuarioPorId(quien.claims.sub);
     if (!usuario) return errorAuth(res, 404, "user_not_found", "User not found");
     if (req.method === "PUT") {
       const { password } = await leerCuerpo(req);
       if (password) {
-        if (password.length < 6)
-          return errorAuth(res, 422, "weak_password", "Password should be at least 6 characters.");
+        if (password.length < 8)
+          return errorAuth(res, 422, "weak_password", "Password should be at least 8 characters.");
         const igual = await db.query(
           `select 1 from auth.users where id = $1 and encrypted_password = extensions.crypt($2, encrypted_password)`,
           [usuario.id, password],
@@ -213,7 +248,22 @@ async function manejarAuth(req, res, url) {
     return responder(res, 200, formatoUsuario(usuario));
   }
 
-  if (ruta === "/logout") return responder(res, 204);
+  if (ruta === "/logout") {
+    // scope: global (todas), local (esta) u others (todas menos esta).
+    if (quien?.claims?.session_id) {
+      const scope = url.searchParams.get("scope") ?? "global";
+      const { sub, session_id } = quien.claims;
+      if (scope === "local")
+        await db.query(`delete from auth.sessions where id = $1`, [session_id]);
+      else if (scope === "others")
+        await db.query(`delete from auth.sessions where user_id = $1 and id <> $2`, [
+          sub,
+          session_id,
+        ]);
+      else await db.query(`delete from auth.sessions where user_id = $1`, [sub]);
+    }
+    return responder(res, 204);
+  }
 
   const admin = ruta.match(/^\/admin\/users(?:\/([0-9a-f-]+))?$/);
   if (admin) {

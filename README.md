@@ -72,7 +72,8 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
    - [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql)
    - [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql)
    - [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql)
-   - [`supabase/migrations/20261024000100_admin.sql`](supabase/migrations/20261024000100_admin.sql) (siempre la **última**: va después de todas las anteriores)
+   - [`supabase/migrations/20261024000100_admin.sql`](supabase/migrations/20261024000100_admin.sql)
+   - [`supabase/migrations/20261025000100_seguridad.sql`](supabase/migrations/20261025000100_seguridad.sql) (siempre la **última**: va después de todas las anteriores)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -98,9 +99,32 @@ Los clientes entran con teléfono y contraseña. Por dentro, Supabase usa un ema
 2. En **Email**, **desactivá "Confirm email"** y guardá. Esto es obligatorio: si queda activado, los clientes no van a poder entrar.
 3. En la misma pantalla, en **User Signups**, **desactivá "Allow new users to sign up"** y guardá. Los clientes los crea el barbero desde el panel; nadie tiene que poder registrarse solo.
    > ⚠️ Desactivá solo esa opción general. **No desactives el proveedor "Email"**: si lo apagás, nadie (ni el barbero ni los clientes) puede entrar con contraseña.
-4. Dejá desactivada la opción **"Secure password change"** (viene así por defecto).
+4. Completá el resto de la configuración de seguridad siguiendo la lista de [Seguridad: configuración de Supabase](#seguridad-configuración-de-supabase) (más abajo, en esta misma sección).
 
 > Las sesiones duran mucho: el cliente no tiene que volver a loguearse seguido. No hace falta configurar nada para eso.
+
+### Seguridad: configuración de Supabase
+
+Revisalo al instalar y cada tanto (los nombres pueden variar un poco según la versión del dashboard):
+
+| Dónde (Supabase → Authentication)                                     | Qué poner                                   | Por qué                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sign In / Providers → User Signups** → "Allow new users to sign up" | **Apagado**                                 | Los clientes los crea el barbero. Si estuviera prendido, cualquiera podría registrarse con la API.                                                                                                                                                                                                           |
+| **Sign In / Providers → Email** → "Confirm email"                     | **Apagado**                                 | Los emails de los clientes son internos (`…@clientes.local`) y no reciben mails.                                                                                                                                                                                                                             |
+| **Sign In / Providers → Email** → "Secure email change"               | **Prendido**                                | Pide confirmar en los dos emails un cambio de email hecho por la API (los internos no reciben mails). Con "Confirm email" apagado Supabase podría aplicarlo igual, pero no da ningún permiso (ver `DECISIONES.md` → Limitaciones). Los cambios de teléfono los hace el servidor y no se ven afectados.       |
+| **Sign In / Providers → Email** → "Secure password change"            | **Prendido** (recomendado)                  | Con un token robado no se puede cambiar la contraseña por la API si la sesión tiene más de 24 h. La app ya verifica la contraseña vigente y hace el cambio con una sesión recién creada. Si alguien ve "Por seguridad, cerrá sesión, volvé a entrar…", apagalo y avisá.                                      |
+| **Sign In / Providers → Email** → "Minimum password length"           | **8**                                       | Igual que la app. Solo afecta contraseñas nuevas: las de antes siguen entrando.                                                                                                                                                                                                                              |
+| **Rate Limits** → "Sign-ups and sign-ins"                             | **150** cada 5 minutos (o más)              | El login sale desde los servidores de Vercel, así que para Supabase todos los clientes comparten pocas IPs. El límite por persona lo pone la app (20 intentos fallidos por IP cada 10 min y 10 por cuenta cada 15 min); el de Supabase tiene que ser más alto para que nadie pueda trabar el login de todos. |
+| **Attack Protection → Captcha**                                       | Apagado, salvo que hagas el cambio de abajo | Ver "Captcha (opcional)". **Si lo prendés sin el cambio en la app, nadie puede entrar.**                                                                                                                                                                                                                     |
+| **URL Configuration**                                                 | La dirección de la web (paso 7)             |                                                                                                                                                                                                                                                                                                              |
+
+#### Captcha (opcional)
+
+La app limita los intentos de login por IP y por cuenta, pero quien llame **directo** a la API de Supabase Auth (con la publishable key, que es pública) solo choca con el límite de Supabase. Lo único que cubre las dos puertas es el **captcha de Supabase con Cloudflare Turnstile** (gratis, necesita una cuenta de Cloudflare). No viene activado porque requiere esa cuenta y un cambio en el código:
+
+1. En [Cloudflare → Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) creá un widget para tu dominio (modo "Managed" o "Invisible"). Te da una **site key** y una **secret key**.
+2. En el código: mostrar el widget en `/login` (y en el cambio de contraseña), con el `nonce` de la CSP (`(await headers()).get("content-security-policy")` trae el nonce; o pasarlo en una cabecera `x-nonce` desde `src/proxy.ts`), mandar el token en el formulario y pasarlo a Supabase: `signInWithPassword({ email, password, options: { captchaToken } })`, también en la verificación de la contraseña vigente de `src/app/cambiar-password/actions.ts`. Sumar `https://challenges.cloudflare.com` a `frame-src` y `connect-src` en `src/lib/csp.ts`.
+3. Publicar ese código y **recién después**, en Supabase → **Attack Protection → Captcha**, elegir Turnstile y pegar la secret key.
 
 ---
 
@@ -109,7 +133,7 @@ Los clientes entran con teléfono y contraseña. Por dentro, Supabase usa un ema
 El primer barbero es **el dueño** (el administrador) y se crea a mano una sola vez:
 
 1. En Supabase, andá a **Authentication → Users → Add user → Create new user**.
-2. Poné **tu email real** y una **contraseña** (de al menos 6 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
+2. Poné **tu email real** y una **contraseña** (de al menos 8 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
 3. Abrí **SQL Editor → New query** y pegá el contenido de [`supabase/crear-barbero.sql`](supabase/crear-barbero.sql).
 4. Cambiá los dos valores marcados con 👉: **tu nombre** y **el email** que usaste en el paso 2.
 5. Tocá **Run**. Al final tiene que aparecer una fila con `rol = barbero` y `es_dueno = true`.
@@ -121,7 +145,7 @@ Para entrar al panel: en la pantalla de ingreso tocá **"¿Sos el barbero? Entr�
 Cada barbero entra con su propio email y contraseña, así la app sabe quién hizo cada corte.
 
 1. En Supabase, andá a **Authentication → Users → Add user → Create new user**.
-2. Poné **el email del empleado** y una **contraseña** (de al menos 6 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
+2. Poné **el email del empleado** y una **contraseña** (de al menos 8 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
 3. Abrí **SQL Editor → New query** y pegá el contenido de [`supabase/crear-empleado.sql`](supabase/crear-empleado.sql) (ojo: **no** el de `crear-barbero.sql`, que crea un dueño).
 4. Cambiá los dos valores marcados con 👉: **el nombre del empleado** (así va a aparecer en cada corte que cargue) y **el email** del paso 2.
 5. Tocá **Run**. Al final tienen que aparecer dos filas: vos con `es_dueno = true` y el empleado con `es_dueno = false`.
@@ -145,7 +169,7 @@ Si alguien tiene que **ver y configurar todo como el dueño pero no corta** (por
 
 ### 5.2 Si el empleado deja de trabajar
 
-No lo borres (sus cortes quedarían "sin barbero"). Bloquealo: abrí **SQL Editor → New query**, pegá [`supabase/quitar-empleado.sql`](supabase/quitar-empleado.sql), cambiá el email marcado con 👉 y tocá **Run**. Sus cortes siguen en la caja con su nombre, pero ya no puede entrar.
+No lo borres (sus cortes quedarían "sin barbero"). Bloquealo: abrí **SQL Editor → New query**, pegá [`supabase/quitar-empleado.sql`](supabase/quitar-empleado.sql), cambiá el email marcado con 👉 (en todos los lugares) y tocá **Run**. Sus cortes siguen en la caja con su nombre, pero ya no puede entrar: se cierran sus sesiones y la base le quita los permisos en el acto, aunque tenga la app abierta.
 
 ---
 
@@ -187,7 +211,7 @@ No lo borres (sus cortes quedarían "sin barbero"). Bloquealo: abrí **SQL Edito
 Hacé este recorrido completo una vez (con tu celular y otro dispositivo, o con dos navegadores):
 
 1. **Barbero:** entrá con tu email → **Nuevo cliente** → cargá un nombre y tu propio celular → **Crear cliente**. Aparece una tarjeta con el teléfono y la contraseña, y los botones **Copiar** y **Enviar por WhatsApp**.
-2. **Cliente:** en otro navegador entrá con ese teléfono y esa contraseña. Te pide elegir una contraseña nueva. Después ves el carnet.
+2. **Cliente:** en otro navegador entrá con ese teléfono y esa contraseña. Te pide escribirla otra vez y elegir una nueva (de al menos 8 caracteres). Después ves el carnet.
 3. **Barbero:** tocá **Escanear** y apuntá al QR del carnet (tocá **Mostrar mi QR** en el carnet). Confirmá **Sumar corte**.
 4. **Cliente:** el sello aparece en el carnet (en vivo, o al volver a abrirlo).
 5. **Barbero:** probá **Deshacer** (tenés 10 minutos), **Resetear contraseña** y **Canjear premio** cuando el cliente llegue a una etapa.
@@ -316,7 +340,12 @@ scripts/                Emulador local y copia del lector de QR
 - Cortes, canjes y reglas se escriben **solo** mediante funciones SQL que validan las reglas de negocio de forma atómica: el canje bloquea la fila del cliente y recalcula los premios disponibles de la etapa elegida; cada acción lleva una clave de idempotencia, así un doble toque no duplica nada. Las etapas de la regla se validan en la base (1 a 6, cortes distintos del 1 al 30) y solo el dueño las puede guardar (`guardar_regla_etapas`).
 - Crear, editar, resetear y eliminar usuarios se hace solo en el servidor con la clave secreta, siempre después de verificar que quien llama es el barbero. La clave nunca llega al navegador (`server-only`).
 - `proxy.ts` redirige según el rol, y además cada página y cada acción vuelve a verificar la sesión en el servidor.
-- Los tests (`npm run test:db`) prueban que un cliente no puede leer datos de otro, ni escribir, ni sumarse cortes, ni canjear premios; que el empleado no ve montos ni cortes del otro barbero ni puede usar las funciones del dueño; y que la migración nueva funciona sobre una base con datos.
+- **Barbero activo:** `es_barbero()`/`es_dueno()` exigen que la cuenta no esté bloqueada (`quitar-empleado.sql`) ni tenga un cambio de contraseña pendiente; un empleado dado de baja pierde los permisos en el acto.
+- **Contraseñas y sesiones:** resetear una contraseña cierra todas las sesiones del cliente (`revocar_sesiones`, solo el servidor) y queda registrado quién la reseteó; el cambio obligatorio pide la contraseña temporal; cambiarla cierra las otras sesiones. Contraseñas nuevas: mínimo 8, no las más comunes ni el teléfono.
+- **Límite de intentos** de login y de verificación de contraseña, por IP y por cuenta, en Postgres (`consumir_intento`).
+- **Notificaciones push:** solo a servicios push reales (FCM, Mozilla, Apple, Windows), hasta 10 dispositivos por barbero; el cliente puede reservar 5 y cancelar 3 veces cada 24 h.
+- **Headers:** Content-Security-Policy con nonce (enforce, `src/proxy.ts` + `src/lib/csp.ts`) y HSTS.
+- Los tests (`npm run test:db`) prueban que un cliente no puede leer datos de otro, ni escribir, ni sumarse cortes, ni canjear premios; que el empleado no ve montos ni cortes del otro barbero ni puede usar las funciones del dueño; que la migración nueva funciona sobre una base con datos; y reproducen los ataques de la auditoría de seguridad (`supabase/tests/seguridad.test.ts`).
 
 Las decisiones de diseño están en [`DECISIONES.md`](DECISIONES.md) y el plan de trabajo en [`PLAN.md`](PLAN.md).
 
@@ -345,7 +374,13 @@ Corregí `NEXT_PUBLIC_SITE_URL` en Vercel y hacé **Redeploy**. Los carnets se r
 El navegador tiene que tener permiso de cámara para el sitio (candado al lado de la dirección → Permisos). Funciona solo con `https` (Vercel ya lo da). Si no hay caso, usá **Buscar al cliente a mano**.
 
 **Un cliente se olvidó la contraseña.**
-Buscalo en **Clientes** → **Resetear contraseña** → pasale la temporal por WhatsApp. Al entrar, va a elegir una nueva.
+Buscalo en **Clientes** → **Resetear contraseña** → pasale la temporal por WhatsApp. Al entrar, le pide escribir otra vez esa temporal ("Contraseña que te dio tu barbero") y elegir una nueva. El reseteo cierra la sesión en todos sus dispositivos (si perdió el celular, quien lo tenga queda afuera).
+
+**"Demasiados intentos. Probá de nuevo en X minutos."**
+Es el límite de intentos: 10 contraseñas incorrectas en 15 minutos bloquean esa cuenta un rato, y 20 desde la misma conexión la bloquean para cualquier cuenta. Hay que esperar los minutos que dice; si el cliente no se acuerda la contraseña, reseteásela (cuando pase el bloqueo, entra con la temporal).
+
+**Un cliente dice "Ya cancelaste 3 turnos…" o "Ya sacaste varios turnos…".**
+Es el límite anti-spam (5 reservas y 3 cancelaciones cada 24 horas). Reservale o cancelale el turno vos desde la **Agenda**.
 
 **El proyecto de Supabase aparece "pausado".**
 En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso**. Con el uso diario de la barbería no pasa; si ocurre, entrá al dashboard de Supabase y tocá **Restore project**.
@@ -355,6 +390,37 @@ En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso
 ## 13. Actualizar una instalación que ya está funcionando
 
 Cuando el código trae una **migración nueva** (un archivo nuevo en `supabase/migrations/`), hay que aplicarla en Supabase **antes** de publicar el código nuevo. La migración nueva funciona con la versión anterior de la app, pero la app nueva necesita la migración.
+
+### Seguridad (`20261025000100_seguridad.sql`)
+
+Qué hace (detalle en [`DECISIONES.md`](DECISIONES.md#seguridad-migración-20261025000100_seguridadsql)): cierra las sesiones al resetear una contraseña y pide la temporal en el primer ingreso; le quita los permisos en el acto a un empleado bloqueado; limita los intentos de login; acepta notificaciones solo de servicios push reales (hasta 10 dispositivos por barbero) y limita el spam de reservas; agrega Content-Security-Policy y HSTS. **No cambia ni borra datos de clientes, cortes ni turnos.** Borra las suscripciones push que no son de un servicio push real (no le llegaban a nadie) y deja como mucho 10 por barbero. La versión publicada de la app sigue funcionando con la base migrada.
+
+**Orden exacto:** respaldo → migración → verificación → configuración de Supabase → código → prueba.
+
+1. **(Recomendado) Hacé un respaldo** (Database → Backups).
+2. **Migración.** **SQL Editor → New query**, pegá **todo** [`supabase/migrations/20261025000100_seguridad.sql`](supabase/migrations/20261025000100_seguridad.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez** (si lo corrés de nuevo da error porque la policy ya existe; no rompe nada).
+3. **Verificá** en una consulta nueva (las tres tienen que andar sin error):
+
+   ```sql
+   select public.revocar_sesiones('00000000-0000-0000-0000-000000000000');  -- 0
+   select public.consumir_intento('prueba', 1, 60);                          -- 0
+   select nombre, es_dueno, es_admin from perfiles where rol = 'barbero';    -- tus barberos de siempre
+   ```
+
+   Si la primera da _permission denied for table sessions_, avisá antes de seguir (la base no deja cerrar sesiones desde SQL y el reseteo de contraseñas va a avisar que no pudo).
+
+4. **Si alguna vez bloqueaste a un empleado** con `quitar-empleado.sql`, cerrá también sus sesiones (la versión nueva del script ya lo hace):
+
+   ```sql
+   delete from auth.sessions where user_id in (select id from auth.users where banned_until > now());
+   ```
+
+5. **Configuración de Supabase:** revisá la tabla de [Seguridad: configuración de Supabase](#seguridad-configuración-de-supabase): signups apagados, "Secure email change" prendido, "Secure password change" prendido, largo mínimo 8 y el rate limit de sign-ins en 150. El captcha queda apagado.
+6. **Publicá el código nuevo** (merge a `main`; Vercel publica solo). No hace falta cargar variables nuevas.
+7. **Probalo** (con el celular):
+   1. Abrí la web: tiene que cargar normal (landing, login, carnet con el QR, escáner, agenda). Si algo quedara en blanco, en la consola del navegador aparecería un error de "Content Security Policy": avisá.
+   2. Entrá como cliente de prueba en dos navegadores. Desde el panel, **Resetear contraseña** a ese cliente: el otro navegador queda afuera (como mucho en una hora). Entrá con la temporal: te pide escribirla de nuevo ("Contraseña que te dio tu barbero") y elegir la tuya.
+   3. Barberos: en **Agenda**, volvé a tocar **Activar notificaciones** si dejaron de llegar (la migración borró solo las suscripciones inválidas, las de los celulares reales quedan).
 
 ### Perfil admin (`20261024000100_admin.sql`)
 

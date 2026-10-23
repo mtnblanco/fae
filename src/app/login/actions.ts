@@ -1,8 +1,20 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { mensajeDeErrorAuth } from "@/lib/errores";
 import { type EstadoFormulario, texto } from "@/lib/formularios";
+import {
+  claveCuenta,
+  claveIp,
+  ipDelPedido,
+  LIMITE_CUENTA,
+  LIMITE_IP,
+  type Limite,
+  mensajeDeEspera,
+} from "@/lib/intentos";
+import { consumirIntentos, liberarIntentos } from "@/lib/intentos-servidor";
 import { destinoSegunPerfil } from "@/lib/rutas";
 import { dominioEmailClientes } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -39,6 +51,15 @@ export async function iniciarSesion(
   const email =
     parse.data.modo === "email" ? usuario : emailInterno(usuario, dominioEmailClientes());
 
+  // Límite propio por IP y por cuenta (el de Supabase Auth ve la IP del servidor).
+  const ip = ipDelPedido(await headers());
+  const limites: Limite[] = [
+    ...(ip ? [{ clave: claveIp(ip), ...LIMITE_IP }] : []),
+    { clave: claveCuenta(email), ...LIMITE_CUENTA },
+  ];
+  const espera = await consumirIntentos(limites);
+  if (espera > 0) return { estado: "error", mensaje: mensajeDeEspera(espera), valores };
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -63,5 +84,12 @@ export async function iniciarSesion(
     return { estado: "error", mensaje: CREDENCIALES_INVALIDAS[modo], valores };
   }
 
+  // Login correcto: la cuenta vuelve a cero y este intento no cuenta para la IP.
+  after(() =>
+    liberarIntentos([
+      { clave: claveCuenta(email) },
+      ...(ip ? [{ clave: claveIp(ip), soloUltimo: true }] : []),
+    ]),
+  );
   redirect(destinoSegunPerfil(perfil));
 }

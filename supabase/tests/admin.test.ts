@@ -334,7 +334,7 @@ describe("admin: no es barbero que atiende", () => {
   });
 
   it("no activa notificaciones (no tiene turnos); el dueño sí", async () => {
-    const sub = ["https://push.ejemplo.com/abc", "p256dh-de-prueba", "auth-prueba"];
+    const sub = ["https://fcm.googleapis.com/fcm/send/abc", "p256dh-de-prueba", "auth-prueba"];
     await h.conRol(como(ADMIN), () =>
       esperarError(db.query(`select guardar_suscripcion_push($1, $2, $3)`, sub), /no_autorizado/),
     );

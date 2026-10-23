@@ -7,13 +7,27 @@ import { SUPABASE_KEY, SUPABASE_URL, supabaseConfigurado } from "./env";
 
 const empiezaCon = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
 
+/** Rutas en las que el proxy refresca la sesión y aplica los redirects por rol. */
+export function esRutaConSesion(path: string): boolean {
+  return (
+    path === RUTAS.login ||
+    path === RUTAS.cambiarPassword ||
+    empiezaCon(path, RUTAS.carnet) ||
+    empiezaCon(path, RUTAS.panel) ||
+    empiezaCon(path, RUTAS.turnos)
+  );
+}
+
 /**
  * Refresca la sesión de Supabase (cookies) y aplica los chequeos optimistas
  * de acceso. La verificación definitiva se repite en el servidor
  * (`requireBarbero` / `requireDueno` / `requireCliente`) y en la base (RLS).
  */
-export async function actualizarSesion(request: NextRequest) {
-  let respuesta = NextResponse.next({ request });
+export async function actualizarSesion(
+  request: NextRequest,
+  siguiente: () => NextResponse = () => NextResponse.next({ request }),
+) {
+  let respuesta = siguiente();
   if (!supabaseConfigurado) return respuesta;
 
   const supabase = createServerClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
@@ -23,7 +37,7 @@ export async function actualizarSesion(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
-        respuesta = NextResponse.next({ request });
+        respuesta = siguiente();
         for (const { name, value, options } of cookiesToSet)
           respuesta.cookies.set(name, value, options);
       },

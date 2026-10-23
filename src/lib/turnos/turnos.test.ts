@@ -35,6 +35,24 @@ describe("turnos: archivo .ics", () => {
     expect(ics).toContain("TRIGGER:-PT2H");
     expect(ics.startsWith("BEGIN:VCALENDAR\r\n")).toBe(true);
   });
+
+  it("un salto de línea en un dato no puede agregar campos al evento (\\r, \\n, \\r\\n)", () => {
+    const ics = archivoIcs({
+      id: "abc",
+      inicio: new Date("2026-10-24T21:30:00Z"),
+      fin: new Date("2026-10-24T22:00:00Z"),
+      titulo: "Turno",
+      lugar: "x",
+      descripcion: "Con Nahuel\rATTENDEE:mailto:a@b.c\nURL:https://evil.example\r\nfin",
+      ahora: new Date("2026-10-23T12:00:00Z"),
+    });
+    const lineas = ics.split("\r\n");
+    expect(lineas.filter((l) => /^(ATTENDEE|URL):/.test(l))).toEqual([]);
+    expect(ics).toContain(
+      "DESCRIPTION:Con Nahuel\\nATTENDEE:mailto:a@b.c\\nURL:https://evil.example\\nfin\r\n",
+    );
+    expect(ics.replace(/\r\n/g, "")).not.toMatch(/[\r\n]/);
+  });
 });
 
 describe("turnos: fechas", () => {

@@ -58,7 +58,8 @@ export async function reservarTurno(datos: {
       titulo: "Nuevo turno",
       cuerpo: `${cuandoTurno(data.inicio, hoyISO())} · ${perfil.nombre}`,
       url: `${RUTAS.agenda}?fecha=${fechaTurno(data.inicio)}`,
-      tag: `turno-${data.id}`,
+      // Por cliente: si reserva y cancela varias veces, los avisos se reemplazan.
+      tag: `cliente-${perfil.id}`,
     }),
   );
   revalidarTurnos();
@@ -79,7 +80,8 @@ export async function cancelarMiTurno(turnoId: string): Promise<Resultado> {
       titulo: "Turno cancelado",
       cuerpo: `${nombreCorto(perfil.nombre)} canceló su turno de ${cuandoTurno(data.inicio, hoyISO()).toLowerCase()}`,
       url: `${RUTAS.agenda}?fecha=${fechaTurno(data.inicio)}`,
-      tag: `turno-${data.id}`,
+      // Por cliente: si reserva y cancela varias veces, los avisos se reemplazan.
+      tag: `cliente-${perfil.id}`,
     }),
   );
   revalidarTurnos();
