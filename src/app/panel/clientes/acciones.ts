@@ -13,6 +13,8 @@ import { createAdminClient, dominioEmailClientes } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { emailInterno } from "@/lib/telefono";
 import {
+  CORTES_MAX,
+  CORTES_MIN,
   altaClienteSchema,
   editarClienteSchema,
   erroresDeCampo,
@@ -260,18 +262,27 @@ export async function deshacerCorte(corteId: string): Promise<Resultado> {
   return exito(undefined);
 }
 
+/** Canjea el premio de la etapa `etapa` (el corte n.º de esa etapa). */
 export async function canjearPremio(
   clienteId: string,
   solicitudId: string,
+  etapa: number,
 ): Promise<Resultado<{ premio: string; cliente: EstadoCliente | null }>> {
   await requireBarbero();
-  if (!idSchema.safeParse(clienteId).success || !idSchema.safeParse(solicitudId).success) {
+  if (
+    !idSchema.safeParse(clienteId).success ||
+    !idSchema.safeParse(solicitudId).success ||
+    !Number.isInteger(etapa) ||
+    etapa < CORTES_MIN ||
+    etapa > CORTES_MAX
+  ) {
     return fallo("Solicitud inválida.");
   }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("canjear_premio", {
     p_cliente_id: clienteId,
     p_solicitud_id: solicitudId,
+    p_etapa: etapa,
   });
   if (error || !data) return fallo(mensajeDeErrorDb(error));
 

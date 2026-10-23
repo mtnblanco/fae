@@ -1,6 +1,6 @@
 # FaeBarberShop · Club de beneficios
 
-Web de fidelización para una barbería. Cada cliente tiene un **carnet digital** en el celular con un código QR y sellos: el barbero escanea el QR en cada corte, se estampa un sello y, al completar la tarjeta, el cliente gana un premio. Además, el carnet muestra descuentos en comercios amigos.
+Web de fidelización para una barbería. Cada cliente tiene un **carnet digital** en el celular con un código QR y sellos: el barbero escanea el QR en cada corte, se estampa un sello y, al llegar a cada etapa de la tarjeta (por ejemplo, al 4.º corte 20% off, al 7.º 50% off y al 10.º corte gratis), el cliente gana un premio. Además, el carnet muestra descuentos en comercios amigos.
 
 - **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR) anotando cuánto pagó cada cliente, y canjea premios.
 - Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él.
@@ -69,6 +69,7 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
    - [`supabase/migrations/20261010000200_funciones.sql`](supabase/migrations/20261010000200_funciones.sql)
    - [`supabase/migrations/20261010000300_seguridad.sql`](supabase/migrations/20261010000300_seguridad.sql)
    - [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql)
+   - [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -180,14 +181,14 @@ Hacé este recorrido completo una vez (con tu celular y otro dispositivo, o con 
 2. **Cliente:** en otro navegador entrá con ese teléfono y esa contraseña. Te pide elegir una contraseña nueva. Después ves el carnet.
 3. **Barbero:** tocá **Escanear** y apuntá al QR del carnet (tocá **Mostrar mi QR** en el carnet). Confirmá **Sumar corte**.
 4. **Cliente:** el sello aparece en el carnet (en vivo, o al volver a abrirlo).
-5. **Barbero:** probá **Deshacer** (tenés 10 minutos), **Resetear contraseña** y **Canjear premio** cuando el cliente complete la tarjeta.
+5. **Barbero:** probá **Deshacer** (tenés 10 minutos), **Resetear contraseña** y **Canjear premio** cuando el cliente llegue a una etapa.
 
 ---
 
 ## 9. Personalizar la barbería
 
 - **Nombre, slogan, ciudad, sedes, horarios, Instagram y WhatsApp de turnos:** en [`src/config/site.ts`](src/config/site.ts). Los campos vacíos no se muestran.
-- **Regla de premios** (cada cuántos cortes y qué premio): desde el panel, en **Premios** (solo el dueño). Arranca en "cada 5 cortes, 50% off en el siguiente corte".
+- **Regla de premios** (en qué cortes se gana un premio y cuál): desde el panel, en **Premios** (solo el dueño). Se pueden poner de 1 a 6 etapas, en tarjetas de hasta 30 cortes; la última completa la tarjeta, que vuelve a empezar. Arranca en "cada 5 cortes, 50% off en el siguiente corte" (una sola etapa).
 - **Precio de cada cliente:** en su ficha, tocá **Precio** (solo el dueño). Se precarga cada vez que se le suma un corte; en ese momento se puede cambiar (por ejemplo, si ese día pagó otra cosa). También se puede cargar al darlo de alta.
 - **Caja:** en el panel, **Caja** (solo el dueño). Muestra lo cobrado por cada barbero hoy, esta semana, este mes, el mes anterior o en el año, y la lista de cortes con su monto.
 - **Descuentos asociados:** desde el panel, en **Descuentos**.
@@ -300,7 +301,7 @@ scripts/                Emulador local y copia del lector de QR
 - **RLS activado en todas las tablas** y permisos mínimos por rol (`anon`, `authenticated`). Un cliente solo puede **leer** sus propios datos, la regla activa y los descuentos vigentes. No puede escribir nada.
 - El rol se chequea con `es_barbero()` y `es_dueno()` (`security definer`, `search_path` fijo).
 - **Dueño y empleado:** el RLS de `cortes` deja que el empleado lea solo los cortes que cargó él (con su monto); la tarjeta de sellos igual cuenta todos, con una función que devuelve solo cantidades. `facturacion()`, `guardar_precio_cliente()` y `guardar_regla()` exigen ser dueño; `deshacer_corte()` deja al empleado deshacer solo los suyos; escribir descuentos también es solo del dueño. Además, `proxy.ts` y los guards (`requireDueno`) lo sacan de las secciones del dueño, y las Server Actions lo vuelven a verificar.
-- Cortes, canjes y reglas se escriben **solo** mediante funciones SQL que validan las reglas de negocio de forma atómica: el canje bloquea la fila del cliente y recalcula los premios disponibles; cada acción lleva una clave de idempotencia, así un doble toque no duplica nada.
+- Cortes, canjes y reglas se escriben **solo** mediante funciones SQL que validan las reglas de negocio de forma atómica: el canje bloquea la fila del cliente y recalcula los premios disponibles de la etapa elegida; cada acción lleva una clave de idempotencia, así un doble toque no duplica nada. Las etapas de la regla se validan en la base (1 a 6, cortes distintos del 1 al 30) y solo el dueño las puede guardar (`guardar_regla_etapas`).
 - Crear, editar, resetear y eliminar usuarios se hace solo en el servidor con la clave secreta, siempre después de verificar que quien llama es el barbero. La clave nunca llega al navegador (`server-only`).
 - `proxy.ts` redirige según el rol, y además cada página y cada acción vuelve a verificar la sesión en el servidor.
 - Los tests (`npm run test:db`) prueban que un cliente no puede leer datos de otro, ni escribir, ni sumarse cortes, ni canjear premios; que el empleado no ve montos ni cortes del otro barbero ni puede usar las funciones del dueño; y que la migración nueva funciona sobre una base con datos.
@@ -342,6 +343,27 @@ En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso
 ## 13. Actualizar una instalación que ya está funcionando
 
 Cuando el código trae una **migración nueva** (un archivo nuevo en `supabase/migrations/`), hay que aplicarla en Supabase **antes** de publicar el código nuevo. La migración nueva funciona con la versión anterior de la app, pero la app nueva necesita la migración.
+
+### Premios por etapas (`20261023000100_premios_por_etapas.sql`)
+
+Qué hace: permite que la regla de premios tenga **varias etapas** (por ejemplo, al 4.º corte 20% off, al 7.º 50% off y al 10.º corte gratis) y que al canjear se elija **cuál** premio. La regla que tenés hoy ("cada N cortes, un premio") pasa a ser una regla de **una sola etapa**: **ningún cliente cambia sus sellos ni sus premios disponibles**, y no se borra nada. La versión de la app que está publicada sigue funcionando igual con la base migrada, así que no hay apuro entre el paso 2 y el 4.
+
+> Si todavía no aplicaste `20261022000100_barberos_y_precios.sql`, primero seguí la sección de abajo ("Dueño y empleado…") y después volvé acá.
+
+1. **(Recomendado) Hacé un respaldo**, igual que en la sección de abajo (Database → Backups, o exportá `reglas` y `canjes` a CSV desde Table Editor).
+2. Abrí **SQL Editor → New query**, pegá **todo** el contenido de [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez** (si lo corrés de nuevo da error porque las restricciones ya existen; no rompe nada).
+3. Verificá: en una consulta nueva pegá y corré
+
+   ```sql
+   select cortes_necesarios, descripcion_premio, etapas from reglas where activa;
+   ```
+
+   Tiene que aparecer tu regla de siempre y, en `etapas`, la misma regla como una sola etapa (por ejemplo `[{"corte": 5, "descripcion": "50% off en el siguiente corte"}]`).
+
+4. **Publicá el código nuevo:** subí los cambios a GitHub (o hacé el merge a `main`). Vercel publica solo en un par de minutos. **No publiques el código antes del paso 2**: la app nueva necesita las columnas que agrega la migración.
+5. Entrá al panel como dueño → **Premios** y armá las etapas (corte n.º y premio de cada una). La vista previa muestra cómo se va a ver el carnet. Al guardar, todos los clientes ven la regla nueva.
+
+   > Al cambiar la regla, los premios de cada cliente se recalculan con todo su historial (como pasaba antes). Los premios ya canjeados no se tocan y nadie queda con premios en negativo; algunos clientes pueden ganar un premio en el momento o tener que esperar un poco más. Los detalles están en [`DECISIONES.md`](DECISIONES.md#premios-por-etapas-migración-20261023000100).
 
 ### Dueño y empleado, precios y montos (`20261022000100_barberos_y_precios.sql`)
 

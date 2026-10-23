@@ -5,6 +5,8 @@
  *   npx supabase gen types typescript --project-id TU_PROYECTO > src/lib/database.types.ts
  */
 
+import type { Etapa, PremioEtapa } from "@/lib/progreso";
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 type Relacion<Nombre extends string, Columna extends string, Tabla extends string> = {
@@ -95,6 +97,8 @@ export type Database = {
           registrado_por: string | null;
           premio_descripcion: string;
           solicitud_id: string | null;
+          /** Corte de la etapa canjeada (null en canjes muy viejos). */
+          etapa: number | null;
         };
         Insert: {
           id?: string;
@@ -103,6 +107,7 @@ export type Database = {
           registrado_por?: string | null;
           premio_descripcion: string;
           solicitud_id?: string | null;
+          etapa?: number | null;
         };
         Update: {
           id?: string;
@@ -111,6 +116,7 @@ export type Database = {
           registrado_por?: string | null;
           premio_descripcion?: string;
           solicitud_id?: string | null;
+          etapa?: number | null;
         };
         Relationships: [
           Relacion<"canjes_cliente_id_fkey", "cliente_id", "perfiles">,
@@ -120,15 +126,19 @@ export type Database = {
       reglas: {
         Row: {
           id: string;
+          /** Largo de la tarjeta (corte de la última etapa). */
           cortes_necesarios: number;
+          /** Premio de la última etapa. */
           descripcion_premio: string;
+          etapas: Etapa[];
           activa: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
-          cortes_necesarios: number;
-          descripcion_premio: string;
+          cortes_necesarios?: number;
+          descripcion_premio?: string;
+          etapas?: Etapa[];
           activa?: boolean;
           created_at?: string;
         };
@@ -136,6 +146,7 @@ export type Database = {
           id?: string;
           cortes_necesarios?: number;
           descripcion_premio?: string;
+          etapas?: Etapa[];
           activa?: boolean;
           created_at?: string;
         };
@@ -189,6 +200,8 @@ export type Database = {
           sellos_actuales: number;
           premios_disponibles: number;
           precio_habitual: number | null;
+          etapas: Etapa[] | null;
+          premios: PremioEtapa[];
         };
         Relationships: [];
       };
@@ -203,11 +216,15 @@ export type Database = {
       };
       deshacer_corte: { Args: { p_corte_id: string }; Returns: undefined };
       canjear_premio: {
-        Args: { p_cliente_id: string; p_solicitud_id?: string };
+        Args: { p_cliente_id: string; p_solicitud_id?: string; p_etapa?: number | null };
         Returns: Database["public"]["Tables"]["canjes"]["Row"];
       };
       guardar_regla: {
         Args: { p_cortes_necesarios: number; p_descripcion_premio: string };
+        Returns: Database["public"]["Tables"]["reglas"]["Row"];
+      };
+      guardar_regla_etapas: {
+        Args: { p_etapas: Etapa[] };
         Returns: Database["public"]["Tables"]["reglas"]["Row"];
       };
       guardar_precio_cliente: {

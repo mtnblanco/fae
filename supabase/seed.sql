@@ -8,6 +8,9 @@
 --   · 1 cliente nuevo que debe cambiar la contraseña:
 --                  teléfono 2346409999            / contraseña nuevo1234
 --   · Cortes y canjes repartidos en los últimos meses, y descuentos asociados.
+--   · Una regla de premios por etapas (al 4.º corte 20% off, al 7.º 50% off y
+--     al 10.º corte gratis). La regla de antes ("cada 5 cortes, 50% off") queda
+--     en el historial, con los canjes que se hicieron mientras estaba vigente.
 --   · Precio habitual en casi todos los clientes. Los cortes de los últimos
 --     ~2 meses tienen monto (algunos los cargó el empleado); los más viejos,
 --     no (como los cortes cargados antes de que existiera el monto).
@@ -133,15 +136,34 @@ where cliente_id in (
   and fecha > now() - interval '30 days';
 
 -- Canjes: después del corte que completó cada premio.
-insert into public.canjes (cliente_id, fecha, registrado_por, premio_descripcion)
+-- (Se hicieron con la regla de antes: "cada 5 cortes, 50% off", etapa 5.)
+insert into public.canjes (cliente_id, fecha, registrado_por, premio_descripcion, etapa)
 select
   c.id,
   now() - make_interval(days => (c.cortes - g * 5) * 16 + abs(hashtext(c.id::text)) % 10 - 1),
   'b0000000-0000-4000-8000-000000000001',
-  '50% off en el siguiente corte'
+  '50% off en el siguiente corte',
+  5
 from seed_clientes c
 cross join lateral generate_series(1, c.canjes) as g
 where not exists (select 1 from public.canjes where cliente_id = c.id);
+
+-- ─── Regla de premios por etapas ────────────────────────────────────────────
+-- La regla inicial ("cada 5 cortes") queda como historial desde hace 200 días y
+-- hace 12 días el dueño la cambió por una de tres etapas.
+do $$
+begin
+  if not exists (select 1 from public.reglas where jsonb_array_length(etapas) > 1) then
+    update public.reglas set created_at = now() - interval '200 days', activa = false where activa;
+    insert into public.reglas (cortes_necesarios, descripcion_premio, etapas, activa, created_at)
+    values (10, 'Corte gratis', '[
+      {"corte": 4,  "descripcion": "20% off"},
+      {"corte": 7,  "descripcion": "50% off"},
+      {"corte": 10, "descripcion": "Corte gratis"}
+    ]'::jsonb, true, now() - interval '12 days');
+  end if;
+end;
+$$;
 
 -- ─── Descuentos asociados ───────────────────────────────────────────────────
 insert into public.descuentos_asociados (comercio, descripcion, vigente_desde, vigente_hasta, activo)

@@ -6,7 +6,7 @@ import {
   Scanner,
   setZXingModuleOverrides,
 } from "@yudiel/react-qr-scanner";
-import { CameraOff, Check, Gift, Loader2, Plus, ScanLine, Search } from "lucide-react";
+import { CameraOff, Check, Loader2, Plus, ScanLine, Search } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -18,15 +18,15 @@ import {
 } from "@/app/panel/clientes/acciones";
 import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
-import { Confirmar } from "@/components/comunes/confirmar";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
 import { useSumarCorte } from "@/hooks/use-sumar-corte";
 import { formatearPesos } from "@/lib/dinero";
 import { tiempoRelativo } from "@/lib/fechas";
-import { calcularProgreso, textoCortes } from "@/lib/progreso";
+import { calcularProgreso, enFrase, etapaAlcanzada, textoCortes } from "@/lib/progreso";
 import { idDesdeQr } from "@/lib/qr";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
+import { BotonCanjear, ListaPremios } from "./boton-canjear";
 import { CampoMonto } from "./campo-monto";
 
 // El lector WebAssembly (para iPhone) se sirve desde la app, no desde un CDN.
@@ -116,14 +116,17 @@ export function Escaner() {
     const alSumar = () =>
       sumar.sumar((datos) => {
         const nuevo = datos.cliente ?? c;
-        const completo = nuevo.premios_disponibles > c.premios_disponibles;
-        if (completo) setFestejo((n) => n + 1);
+        const ganado = etapaAlcanzada(p.etapas, nuevo.total_cortes);
+        if (ganado) setFestejo((n) => n + 1);
         setEstado({ fase: "cliente", cliente: nuevo, corteSumado: datos.corteId, nuevos: 1 });
+        const cobrado =
+          datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`;
         toast.success(
-          completo ? `¡${primerNombre} completó la tarjeta!` : `Corte sumado a ${primerNombre}`,
+          ganado
+            ? `¡${primerNombre} ganó ${enFrase(ganado.descripcion)}!`
+            : `Corte sumado a ${primerNombre}`,
           {
-            description:
-              datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`,
+            description: ganado ? `${cobrado}. Ya lo puede canjear.` : cobrado,
             duration: 8000,
             action: {
               label: "Deshacer",
@@ -148,9 +151,9 @@ export function Escaner() {
         );
       });
 
-    const alCanjear = () =>
+    const alCanjear = (etapa: number) =>
       canjear.ejecutar(async (solicitudId) => {
-        const r = await canjearPremio(c.id, solicitudId);
+        const r = await canjearPremio(c.id, solicitudId, etapa);
         if (!r.ok) {
           toast.error(r.error);
           return;
@@ -175,6 +178,7 @@ export function Escaner() {
               <GrillaSellos
                 key={`${c.total_cortes}-${c.premios_disponibles}`}
                 total={p.necesarios}
+                premios={p.etapas.map((e) => e.corte)}
                 llenos={p.mostrados}
                 nuevos={estado.nuevos}
                 className="mt-5"
@@ -183,21 +187,13 @@ export function Escaner() {
                 <span className="numeros text-marfil">
                   {p.mostrados} de {p.necesarios}
                 </span>
-                {p.faltan > 0
-                  ? `. Le ${p.faltan === 1 ? "falta" : "faltan"} ${textoCortes(p.faltan)} para el premio.`
+                {p.proxima
+                  ? `. Le ${p.faltan === 1 ? "falta" : "faltan"} ${textoCortes(p.faltan)} para ${enFrase(p.proxima.descripcion)}.`
                   : ". ¡Tarjeta completa!"}
               </p>
             </>
           ) : null}
-          {p.premiosDisponibles > 0 ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-oro/40 bg-oro/10 px-3 py-1.5 text-sm font-medium text-oro-claro">
-              <Gift className="size-4" aria-hidden />
-              {p.premiosDisponibles === 1
-                ? "Tiene 1 premio"
-                : `Tiene ${p.premiosDisponibles} premios`}
-              : {c.descripcion_premio}
-            </p>
-          ) : null}
+          <ListaPremios disponibles={p.disponibles} prefijo="Tiene para canjear:" />
         </div>
 
         {estado.corteSumado ? (
@@ -228,24 +224,12 @@ export function Escaner() {
           </>
         )}
 
-        {p.premiosDisponibles > 0 ? (
-          <Confirmar
-            disparador={
-              <Button size="xl" variant="oro" disabled={canjear.pendiente}>
-                {canjear.pendiente ? (
-                  <Loader2 className="animate-spin" aria-hidden />
-                ) : (
-                  <Gift aria-hidden />
-                )}
-                Canjear premio
-              </Button>
-            }
-            titulo="¿Canjear el premio?"
-            descripcion={`${primerNombre} va a usar su premio: ${c.descripcion_premio}. No se puede deshacer.`}
-            textoConfirmar="Sí, canjear"
-            onConfirmar={alCanjear}
-          />
-        ) : null}
+        <BotonCanjear
+          primerNombre={primerNombre ?? c.nombre}
+          disponibles={p.disponibles}
+          pendiente={canjear.pendiente}
+          onCanjear={alCanjear}
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <Button

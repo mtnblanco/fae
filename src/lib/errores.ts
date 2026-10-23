@@ -11,7 +11,11 @@ const MENSAJES_DB: Record<string, string> = {
   fuera_de_plazo: "Pasaron más de 10 minutos: este corte ya no se puede deshacer.",
   premio_ya_canjeado:
     "Este corte completó un premio que ya se canjeó, así que no se puede deshacer.",
-  sin_premios: "Este cliente no tiene premios para canjear.",
+  sin_premios: "Este cliente no tiene ese premio para canjear.",
+  etapa_inexistente:
+    "Ese premio ya no está en la regla (puede que la hayan cambiado). Recargá la página.",
+  etapas_invalidas:
+    "Revisá las etapas: entre 1 y 6, cortes distintos del 1 al 30 y cada premio con su descripción.",
   sin_regla: "No hay una regla de premios configurada.",
   solicitud_invalida: "La operación no es válida. Recargá la página e intentá de nuevo.",
   corte_ajeno: "Solo podés deshacer los cortes que cargaste vos.",

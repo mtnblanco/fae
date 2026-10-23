@@ -135,22 +135,86 @@ export const descuentoSchema = z
     path: ["vigente_hasta"],
   });
 
-// ─── Regla de premios ───────────────────────────────────────────────────────
+// ─── Regla de premios (etapas) ──────────────────────────────────────────────
+// Los mismos límites que valida la base (guardar_regla_etapas).
 export const CORTES_MIN = 1;
-export const CORTES_MAX = 20;
+export const CORTES_MAX = 30;
+export const ETAPAS_MAX = 6;
 
-export const reglaSchema = z.object({
-  cortes_necesarios: z.coerce
-    .number({ error: "Ingresá un número." })
-    .int({ error: "Tiene que ser un número entero." })
-    .min(CORTES_MIN, { error: `Tiene que ser al menos ${CORTES_MIN}.` })
-    .max(CORTES_MAX, { error: `Puede ser como máximo ${CORTES_MAX}.` }),
-  descripcion_premio: z
-    .string()
+const etapaSchema = z.object({
+  corte: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ error: "¿En qué corte?" })
+      .int({ error: "Tiene que ser un número entero." })
+      .min(CORTES_MIN, { error: `Desde el corte ${CORTES_MIN}.` })
+      .max(CORTES_MAX, { error: `Hasta el corte ${CORTES_MAX}.` }),
+  ),
+  descripcion: z
+    .string({ error: "Describí el premio." })
     .trim()
     .min(3, { error: "Describí el premio." })
-    .max(120, { error: "La descripción puede tener hasta 120 caracteres." }),
+    .max(120, { error: "Hasta 120 caracteres." }),
 });
+
+export const etapasSchema = z
+  .array(etapaSchema)
+  .min(1, { error: "Agregá al menos una etapa." })
+  .max(ETAPAS_MAX, { error: `Puede haber hasta ${ETAPAS_MAX} etapas.` })
+  .superRefine((etapas, ctx) => {
+    const vistos = new Set<number>();
+    etapas.forEach((e, i) => {
+      if (vistos.has(e.corte)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Ya hay otra etapa en el corte ${e.corte}.`,
+          path: [i, "corte"],
+        });
+      }
+      vistos.add(e.corte);
+    });
+  })
+  .transform((etapas) => [...etapas].sort((a, b) => a.corte - b.corte));
+
+export type ErroresEtapas = {
+  general?: string;
+  filas: Record<number, { corte?: string; descripcion?: string }>;
+};
+
+/** Valida las etapas tal como vienen del formulario (en su orden) y dice qué falla en cada fila. */
+export function validarEtapas(
+  crudas: unknown,
+):
+  | { ok: true; etapas: { corte: number; descripcion: string }[] }
+  | { ok: false; errores: ErroresEtapas } {
+  const r = etapasSchema.safeParse(crudas);
+  if (r.success) return { ok: true, etapas: r.data };
+  const errores: ErroresEtapas = { filas: {} };
+  for (const issue of r.error.issues) {
+    const [i, campo] = issue.path;
+    if (typeof i === "number" && (campo === "corte" || campo === "descripcion")) {
+      const fila = (errores.filas[i] ??= {});
+      fila[campo] ??= issue.message;
+    } else {
+      errores.general ??= issue.message;
+    }
+  }
+  // Zod no corre el chequeo de repetidos si alguna fila tiene otro error: lo hacemos acá.
+  if (Array.isArray(crudas)) {
+    const vistos = new Set<number>();
+    crudas.forEach((e: unknown, i) => {
+      const corte = Number((e as { corte?: unknown } | null)?.corte);
+      if (!Number.isInteger(corte) || String((e as { corte?: unknown }).corte).trim() === "")
+        return;
+      if (vistos.has(corte)) {
+        const fila = (errores.filas[i] ??= {});
+        fila.corte ??= `Ya hay otra etapa en el corte ${corte}.`;
+      }
+      vistos.add(corte);
+    });
+  }
+  return { ok: false, errores };
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 export type ErroresDeCampo = Partial<Record<string, string[]>>;

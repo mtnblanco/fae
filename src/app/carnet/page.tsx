@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { Suspense } from "react";
 import { ActualizadorCarnet } from "@/components/carnet/actualizador-carnet";
 import { Bienvenida } from "@/components/carnet/bienvenida";
+import { ListaEtapas } from "@/components/carnet/lista-etapas";
 import { TarjetaCarnet } from "@/components/carnet/tarjeta-carnet";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { HistorialCliente } from "@/components/panel/historial-cliente";
@@ -11,6 +12,7 @@ import { urlDelSitio } from "@/config/site";
 import { requireCliente } from "@/lib/auth";
 import { datosCarnet } from "@/lib/datos/carnet";
 import { anioDe, formatearDia } from "@/lib/fechas";
+import { calcularProgreso, enFrase, textoCortes } from "@/lib/progreso";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
 
 /** Número de socio corto y estable, derivado del id (solo decorativo). */
@@ -24,6 +26,7 @@ export default async function PaginaCarnet() {
   if (!datos) throw new Error("No encontramos tu carnet.");
 
   const { cliente, cortes, canjes, descuentos } = datos;
+  const p = calcularProgreso(cliente);
   // El QR lleva a la ficha del cliente en el panel: el escáner extrae el id,
   // y si el barbero usa la cámara común del celular, también abre la ficha.
   const qrSvg = await QRCode.toString(`${urlDelSitio()}${rutaCliente(cliente.id)}`, {
@@ -55,33 +58,61 @@ export default async function PaginaCarnet() {
         <h2 id="titulo-premios" className="text-2xl">
           Tus premios
         </h2>
-        {cliente.premios_disponibles > 0 ? (
-          <div className="flex gap-4 rounded-xl border border-oro/40 bg-oro/10 p-5">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-oro text-primary-foreground">
-              <Gift className="size-5" aria-hidden />
-            </span>
-            <div>
-              <p className="font-titulo text-xl text-marfil">
-                {cliente.premios_disponibles === 1
+        {p.disponibles.length > 0 ? (
+          <div className="rounded-xl border border-oro/40 bg-oro/10 p-5">
+            <div className="flex items-center gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-oro text-primary-foreground">
+                <Gift className="size-5" aria-hidden />
+              </span>
+              <p className="font-titulo text-xl leading-tight text-marfil">
+                {p.premiosDisponibles === 1
                   ? "Tenés un premio para usar"
-                  : `Tenés ${cliente.premios_disponibles} premios para usar`}
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-arena">
-                {cliente.descripcion_premio}. Avisale a tu barbero en tu próximo corte y te lo
-                descuenta.
+                  : `Tenés ${p.premiosDisponibles} premios para usar`}
               </p>
             </div>
+            <ul className="mt-4 grid grid-cols-1 gap-2">
+              {p.disponibles.map((premio) => (
+                <li
+                  key={premio.corte}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-oro/25 bg-noche/40 px-4 py-3"
+                >
+                  <span className="min-w-0 text-marfil">{premio.descripcion}</span>
+                  {premio.cantidad > 1 ? (
+                    <span className="numeros shrink-0 text-sm font-semibold text-oro-claro">
+                      ×{premio.cantidad}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm leading-relaxed text-arena">
+              Avisale a tu barbero en tu próximo corte y te lo descuenta. No se vencen.
+            </p>
           </div>
         ) : null}
-        {cliente.cortes_necesarios ? (
-          <p className="text-[0.9375rem] leading-relaxed text-arena">
-            Cada <span className="text-marfil">{cliente.cortes_necesarios} cortes</span> ganás{" "}
-            <span className="text-marfil">{cliente.descripcion_premio?.toLowerCase()}</span>. Tu
-            barbero te suma un sello cada vez que venís.
-            {cliente.total_canjes > 0
-              ? ` Ya usaste ${cliente.total_canjes === 1 ? "1 premio" : `${cliente.total_canjes} premios`}.`
-              : ""}
-          </p>
+        {p.etapas.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3">
+            {p.etapas.length === 1 ? (
+              <p className="text-[0.9375rem] leading-relaxed text-arena">
+                Cada <span className="text-marfil">{textoCortes(p.necesarios)}</span> ganás{" "}
+                <span className="text-marfil">{enFrase(p.etapas[0]!.descripcion)}</span>.
+              </p>
+            ) : (
+              <>
+                <p className="text-[0.9375rem] leading-relaxed text-arena">
+                  Tu tarjeta tiene {p.etapas.length} premios en el camino:
+                </p>
+                <ListaEtapas etapas={p.etapas} alcanzados={p.mostrados} />
+              </>
+            )}
+            <p className="text-[0.9375rem] leading-relaxed text-arena">
+              Tu barbero te suma un sello cada vez que venís
+              {p.etapas.length > 1 ? "; al completarla, empieza de nuevo" : ""}.
+              {cliente.total_canjes > 0
+                ? ` Ya usaste ${cliente.total_canjes === 1 ? "1 premio" : `${cliente.total_canjes} premios`}.`
+                : ""}
+            </p>
+          </div>
         ) : null}
       </section>
 

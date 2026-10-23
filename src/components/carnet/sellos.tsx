@@ -24,12 +24,14 @@ const NUMERO = {
 
 type Tamano = keyof typeof TAMANOS;
 
-/** Sello ganado: un disco de neón encendido con la tijera. */
+/** Sello ganado: un disco de neón encendido con la tijera (o el regalo, si ahí hay premio). */
 function SelloLleno({
   inclinacion,
   retardoEncendido,
+  premio,
 }: {
   inclinacion: number;
+  premio: boolean;
   /** Si es un sello recién ganado: cuándo se enciende (a saltos, una vez). */
   retardoEncendido: number | null;
 }) {
@@ -46,27 +48,33 @@ function SelloLleno({
           : undefined
       }
     >
-      <Scissors
-        className={ICONO}
-        style={{ rotate: `${inclinacion - 45}deg` }}
-        strokeWidth={2.25}
-        aria-hidden
-      />
+      {premio ? (
+        <Gift className={ICONO} strokeWidth={2.25} aria-hidden />
+      ) : (
+        <Scissors
+          className={ICONO}
+          style={{ rotate: `${inclinacion - 45}deg` }}
+          strokeWidth={2.25}
+          aria-hidden
+        />
+      )}
     </span>
   );
 }
 
 /**
  * Lugar sin sello. El siguiente a ganar va con borde oro y su número; los demás,
- * punteados y apagados. El último muestra el premio.
+ * punteados y apagados. Los lugares con premio (cada etapa) muestran el regalo.
  */
 function SelloVacio({
   numero,
   estado,
+  premio = false,
   tamano,
 }: {
   numero: number;
-  estado: "siguiente" | "premio" | "vacio";
+  estado: "siguiente" | "vacio";
+  premio?: boolean;
   tamano: Tamano;
 }) {
   return (
@@ -75,7 +83,7 @@ function SelloVacio({
         "numeros flex items-center justify-center rounded-full font-semibold",
         estado === "siguiente"
           ? "border-[1.5px] border-oro bg-oro/[0.06] text-oro"
-          : estado === "premio"
+          : premio
             ? "border border-dashed border-oro/55 text-oro/85"
             : "border border-dashed border-hierro-claro text-ceniza",
         NUMERO[tamano],
@@ -83,22 +91,29 @@ function SelloVacio({
         "flex",
       )}
     >
-      {estado === "premio" ? <Gift className={ICONO} aria-hidden /> : numero}
+      {premio ? <Gift className={ICONO} aria-hidden /> : numero}
     </span>
   );
 }
 
-/** Columnas para que la grilla quede pareja y entre en 360px (máx. 5). */
-function columnasPara(total: number) {
+/**
+ * Columnas para que la grilla quede pareja y entre en 360px: hasta 10 sellos,
+ * máx. 5 por fila; con más (tarjetas de hasta 30), 5 o 6 por fila, la que deje
+ * la última fila más completa.
+ */
+export function columnasPara(total: number) {
   if (total <= 5) return total;
   if (total === 6) return 3;
-  if (total % 4 === 0) return 4;
-  return 5;
+  if (total <= 12) return total % 4 === 0 ? 4 : 5;
+  const vacios = (c: number) => (c - (total % c)) % c;
+  return vacios(5) < vacios(6) ? 5 : 6;
 }
 
 type Props = {
-  /** Cantidad total de lugares (cortes necesarios para el premio). */
+  /** Cantidad total de lugares (largo de la tarjeta). */
   total: number;
+  /** En qué cortes hay premio (las etapas). Por defecto, solo el último. */
+  premios?: number[];
   /** Sellos llenos. */
   llenos: number;
   /** Cuántos de los últimos sellos llenos se "estampan" con animación. */
@@ -107,15 +122,26 @@ type Props = {
   className?: string;
 };
 
-export function GrillaSellos({ total, llenos, nuevos = 0, tamano = "md", className }: Props) {
+export function GrillaSellos({
+  total,
+  premios,
+  llenos,
+  nuevos = 0,
+  tamano = "md",
+  className,
+}: Props) {
   const reducirMovimiento = useReducedMotion();
   const primeroNuevo = llenos - nuevos;
   const columnas = columnasPara(total);
+  const conPremio = new Set(premios?.length ? premios : [total]);
+  const etapas = [...conPremio].sort((a, b) => a - b);
 
   return (
     <ol
       role="img"
-      aria-label={`${llenos} de ${total} sellos`}
+      aria-label={`${llenos} de ${total} sellos${
+        etapas.length > 1 ? `. Premios en los cortes ${etapas.join(", ")}` : ""
+      }`}
       className={cn(
         "grid w-full gap-(--hueco) [--hueco:0.625rem] sm:[--hueco:0.75rem]",
         TAMANOS[tamano],
@@ -138,7 +164,12 @@ export function GrillaSellos({ total, llenos, nuevos = 0, tamano = "md", classNa
               <>
                 {/* El hueco queda debajo: el sello "cae" encima y se enciende. */}
                 <span className="absolute inset-0">
-                  <SelloVacio numero={i + 1} estado="vacio" tamano={tamano} />
+                  <SelloVacio
+                    numero={i + 1}
+                    estado="vacio"
+                    premio={conPremio.has(i + 1)}
+                    tamano={tamano}
+                  />
                 </span>
                 <motion.span
                   className="relative block"
@@ -156,6 +187,7 @@ export function GrillaSellos({ total, llenos, nuevos = 0, tamano = "md", classNa
                 >
                   <SelloLleno
                     inclinacion={inclinacion}
+                    premio={conPremio.has(i + 1)}
                     retardoEncendido={esNuevo && !reducirMovimiento ? retardo + 0.1 : null}
                   />
                 </motion.span>
@@ -172,7 +204,8 @@ export function GrillaSellos({ total, llenos, nuevos = 0, tamano = "md", classNa
             ) : (
               <SelloVacio
                 numero={i + 1}
-                estado={i === total - 1 ? "premio" : i === llenos ? "siguiente" : "vacio"}
+                estado={i === llenos ? "siguiente" : "vacio"}
+                premio={conPremio.has(i + 1)}
                 tamano={tamano}
               />
             )}

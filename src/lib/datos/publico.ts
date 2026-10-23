@@ -1,11 +1,11 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { type Etapa, etapasDe } from "@/lib/progreso";
 import { SUPABASE_KEY, SUPABASE_URL, supabaseConfigurado } from "@/lib/supabase/env";
 
-const REGLA_POR_DEFECTO = {
-  cortes_necesarios: 5,
-  descripcion_premio: "50% off en el siguiente corte",
+const REGLA_POR_DEFECTO: { etapas: Etapa[] } = {
+  etapas: [{ corte: 5, descripcion: "50% off en el siguiente corte" }],
 };
 
 /**
@@ -20,10 +20,12 @@ export async function reglaPublica() {
     });
     const { data } = await supabase
       .from("reglas")
-      .select("cortes_necesarios, descripcion_premio")
+      .select("etapas")
       .eq("activa", true)
       .maybeSingle();
-    return data ?? REGLA_POR_DEFECTO;
+    return data?.etapas?.length
+      ? { etapas: etapasDe({ ...data, cortes_necesarios: null }) }
+      : REGLA_POR_DEFECTO;
   } catch {
     return REGLA_POR_DEFECTO;
   }

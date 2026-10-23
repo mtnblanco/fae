@@ -6,7 +6,7 @@ import {
   loginSchema,
   montoSchema,
   precioClienteSchema,
-  reglaSchema,
+  validarEtapas,
 } from "./validaciones";
 
 describe("loginSchema", () => {
@@ -85,22 +85,53 @@ describe("descuentoSchema", () => {
   });
 });
 
-describe("reglaSchema", () => {
-  it("valida el rango de cortes", () => {
+describe("validarEtapas", () => {
+  it("acepta etapas válidas, las ordena y recorta espacios", () => {
     expect(
-      reglaSchema.safeParse({ cortes_necesarios: "5", descripcion_premio: "Corte gratis" }).success,
-    ).toBe(true);
-    expect(
-      reglaSchema.safeParse({ cortes_necesarios: "0", descripcion_premio: "Corte gratis" }).success,
-    ).toBe(false);
-    expect(
-      reglaSchema.safeParse({ cortes_necesarios: "21", descripcion_premio: "Corte gratis" })
-        .success,
-    ).toBe(false);
-    expect(
-      reglaSchema.safeParse({ cortes_necesarios: "2.5", descripcion_premio: "Corte gratis" })
-        .success,
-    ).toBe(false);
+      validarEtapas([
+        { corte: "10", descripcion: " Corte gratis " },
+        { corte: "4", descripcion: "20% off" },
+      ]),
+    ).toEqual({
+      ok: true,
+      etapas: [
+        { corte: 4, descripcion: "20% off" },
+        { corte: 10, descripcion: "Corte gratis" },
+      ],
+    });
+  });
+
+  it("marca el error en la fila y el campo que corresponde", () => {
+    const r = validarEtapas([
+      { corte: "4", descripcion: "20% off" },
+      { corte: "", descripcion: "x" },
+      { corte: "31", descripcion: "Lejos" },
+      { corte: "2.5", descripcion: "Medio" },
+      { corte: "4", descripcion: "Repetido" },
+    ]);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.errores.filas[0]).toBeUndefined();
+    expect(r.errores.filas[1]).toEqual({
+      corte: "¿En qué corte?",
+      descripcion: "Describí el premio.",
+    });
+    expect(r.errores.filas[2]?.corte).toBe("Hasta el corte 30.");
+    expect(r.errores.filas[3]?.corte).toBe("Tiene que ser un número entero.");
+    expect(r.errores.filas[4]?.corte).toBe("Ya hay otra etapa en el corte 4.");
+  });
+
+  it("pide entre 1 y 6 etapas", () => {
+    expect(validarEtapas([])).toMatchObject({
+      ok: false,
+      errores: { general: "Agregá al menos una etapa." },
+    });
+    const siete = Array.from({ length: 7 }, (_, i) => ({ corte: i + 1, descripcion: "Premio" }));
+    expect(validarEtapas(siete)).toMatchObject({
+      ok: false,
+      errores: { general: "Puede haber hasta 6 etapas." },
+    });
+    expect(validarEtapas("no es una lista").ok).toBe(false);
   });
 });
 

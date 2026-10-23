@@ -49,11 +49,13 @@ export type ClienteListado = Pick<
   | "sellos_actuales"
   | "premios_disponibles"
   | "cortes_necesarios"
+  | "etapas"
+  | "premios"
   | "created_at"
 >;
 
 const COLUMNAS_LISTADO =
-  "id, nombre, telefono, total_cortes, ultimo_corte, sellos_actuales, premios_disponibles, cortes_necesarios, created_at";
+  "id, nombre, telefono, total_cortes, ultimo_corte, sellos_actuales, premios_disponibles, cortes_necesarios, etapas, premios, created_at";
 
 export async function listarClientes(opciones: {
   busqueda?: string;
@@ -314,7 +316,7 @@ export async function clienteParaEscaneo(id: string) {
   const { data, error } = await supabase
     .from("resumen_clientes")
     .select(
-      "id, nombre, telefono, total_cortes, sellos_actuales, premios_disponibles, cortes_necesarios, descripcion_premio, ultimo_corte, precio_habitual",
+      "id, nombre, telefono, total_cortes, sellos_actuales, premios_disponibles, cortes_necesarios, descripcion_premio, etapas, premios, ultimo_corte, precio_habitual",
     )
     .eq("id", id)
     .maybeSingle();

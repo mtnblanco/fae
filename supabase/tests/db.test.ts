@@ -17,9 +17,11 @@ const RAIZ = join(__dirname, "..");
 
 const BARBERO = "b0000000-0000-4000-8000-000000000001"; // dueño
 const EMPLEADO = "b0000000-0000-4000-8000-000000000002";
-const JUAN = "c0000000-0000-4000-8000-000000000001"; // 4 cortes, 0 canjes
-const MARTIN = "c0000000-0000-4000-8000-000000000002"; // 5 cortes → 1 premio
-const LUCAS = "c0000000-0000-4000-8000-000000000003"; // 12 cortes, 2 canjes
+// El seed tiene la regla de etapas "4: 20% off · 7: 50% off · 10: Corte gratis" y
+// canjes hechos con la regla anterior ("cada 5 cortes", etapa 5).
+const JUAN = "c0000000-0000-4000-8000-000000000001"; // 4 cortes, 0 canjes → 20% off
+const MARTIN = "c0000000-0000-4000-8000-000000000002"; // 5 cortes → 20% off
+const LUCAS = "c0000000-0000-4000-8000-000000000003"; // 12 cortes, 2 canjes → corte gratis
 const SANTIAGO = "c0000000-0000-4000-8000-000000000004"; // 3 cortes
 const FACUNDO = "c0000000-0000-4000-8000-000000000005"; // 10 cortes, los últimos del empleado
 const NICOLAS = "c0000000-0000-4000-8000-000000000006"; // 1 corte
@@ -28,6 +30,12 @@ const AGUSTIN = "c0000000-0000-4000-8000-000000000008"; // 0 cortes, sin precio
 const EZEQUIEL = "c0000000-0000-4000-8000-000000000010"; // 2 cortes
 const JOAQUIN = "c0000000-0000-4000-8000-000000000012"; // 15 cortes, 2 canjes
 const SIN_PERFIL = "d0000000-0000-4000-8000-000000000001";
+
+const ETAPAS_SEED = [
+  { corte: 4, descripcion: "20% off" },
+  { corte: 7, descripcion: "50% off" },
+  { corte: 10, descripcion: "Corte gratis" },
+];
 
 type Rol = { rol: "anon" } | { rol: "authenticated"; sub: string };
 const ANON: Rol = { rol: "anon" };
@@ -373,23 +381,45 @@ describe("barbero: lectura", () => {
     expect(por[JUAN]).toMatchObject({
       total_cortes: 4,
       sellos_actuales: 4,
-      premios_disponibles: 0,
+      premios_disponibles: 1,
     });
     expect(por[MARTIN]).toMatchObject({
       total_cortes: 5,
-      sellos_actuales: 0,
+      sellos_actuales: 5,
       premios_disponibles: 1,
     });
+    // 12 cortes = una tarjeta completa (4, 7 y 10) + 2 sellos. Los 2 canjes de la
+    // regla anterior (etapa 5, que ya no existe) se descuentan desde la etapa 4.
     expect(por[LUCAS]).toMatchObject({
       total_cortes: 12,
       sellos_actuales: 2,
-      premios_disponibles: 0,
+      premios_disponibles: 1,
     });
     expect(por[JOAQUIN]).toMatchObject({
       total_cortes: 15,
-      sellos_actuales: 0,
-      premios_disponibles: 1,
+      sellos_actuales: 5,
+      premios_disponibles: 2,
     });
+  });
+
+  it("resumen_clientes detalla los premios por etapa", async () => {
+    const r = await conRol(como(BARBERO), () =>
+      fila<{ etapas: unknown; premios: { corte: number; disponibles: number }[] }>(
+        `select etapas, premios from resumen_clientes where id = $1`,
+        [JOAQUIN],
+      ),
+    );
+    expect(r.etapas).toEqual([
+      { corte: 4, descripcion: "20% off" },
+      { corte: 7, descripcion: "50% off" },
+      { corte: 10, descripcion: "Corte gratis" },
+    ]);
+    // 15 cortes: la etapa 4 se ganó 2 veces; la 7 y la 10, una. Menos 2 canjes viejos.
+    expect(r.premios).toEqual([
+      { corte: 4, descripcion: "20% off", ganados: 2, canjeados: 0, disponibles: 0 },
+      { corte: 7, descripcion: "50% off", ganados: 1, canjeados: 0, disponibles: 1 },
+      { corte: 10, descripcion: "Corte gratis", ganados: 1, canjeados: 0, disponibles: 1 },
+    ]);
   });
 
   it("busca sin importar tildes ni mayúsculas, y por teléfono", async () => {
@@ -475,8 +505,10 @@ describe("barbero: canjear_premio", () => {
         [MARTIN, "f0000000-0000-4000-8000-000000000010"],
       ),
     );
+    // Sin decir la etapa (como la versión anterior de la app): el primer premio disponible.
     expect(canje).toMatchObject({
-      premio_descripcion: "50% off en el siguiente corte",
+      premio_descripcion: "20% off",
+      etapa: 4,
       registrado_por: BARBERO,
     });
   });
@@ -503,10 +535,17 @@ describe("barbero: canjear_premio", () => {
     expect(r.premios_disponibles).toBe(0);
   });
 
-  it("rechaza canjes sin premios disponibles", async () => {
-    await conRol(como(BARBERO), () =>
-      esperarError(db.query(`select canjear_premio($1)`, [LUCAS]), /sin_premios/),
-    );
+  it("rechaza canjes sin premios disponibles o de etapas que no existen", async () => {
+    await conRol(como(BARBERO), async () => {
+      await esperarError(db.query(`select canjear_premio($1)`, [EZEQUIEL]), /sin_premios/);
+      // Lucas tiene el corte gratis, pero no el 20% off.
+      await esperarError(db.query(`select canjear_premio($1, null, 4)`, [LUCAS]), /sin_premios/);
+      await esperarError(
+        db.query(`select canjear_premio($1, null, 5)`, [LUCAS]),
+        /etapa_inexistente/,
+      );
+    });
+    expect(await contar(`select * from canjes where cliente_id = $1`, [LUCAS])).toBe(2);
   });
 });
 
@@ -534,19 +573,22 @@ describe("barbero: deshacer_corte", () => {
     await db.query(`delete from cortes where id = $1`, [viejo.id]);
   });
 
-  it("no deshace el corte que completó un premio ya canjeado", async () => {
-    // Juan tiene 4: el 5º completa el premio, se canjea, y después se intenta deshacer.
-    await db.exec(
-      `update cortes set fecha = fecha - interval '2 minutes' where cliente_id = '${JUAN}'`,
-    );
-    const quinto = await conRol(como(BARBERO), () =>
-      fila<{ id: string }>(`select * from registrar_corte($1)`, [JUAN]),
-    );
-    await conRol(como(BARBERO), () => db.query(`select canjear_premio($1)`, [JUAN]));
+  it("no deshace el corte que ganó un premio ya canjeado", async () => {
+    // Juan tiene 4: con el 7.º gana el 50% off, se canjea, y después se intenta deshacer.
+    let septimo = { id: "" };
+    for (let i = 0; i < 3; i++) {
+      await db.exec(
+        `update cortes set fecha = fecha - interval '2 minutes' where cliente_id = '${JUAN}'`,
+      );
+      septimo = await conRol(como(BARBERO), () =>
+        fila<{ id: string }>(`select * from registrar_corte($1)`, [JUAN]),
+      );
+    }
+    await conRol(como(BARBERO), () => db.query(`select canjear_premio($1, null, 7)`, [JUAN]));
     await conRol(como(BARBERO), () =>
-      esperarError(db.query(`select deshacer_corte($1)`, [quinto.id]), /premio_ya_canjeado/),
+      esperarError(db.query(`select deshacer_corte($1)`, [septimo.id]), /premio_ya_canjeado/),
     );
-    expect(await contar(`select * from cortes where id = $1`, [quinto.id])).toBe(1);
+    expect(await contar(`select * from cortes where id = $1`, [septimo.id])).toBe(1);
   });
 });
 
@@ -577,15 +619,19 @@ describe("barbero: reglas y descuentos", () => {
     );
     expect(lucas).toEqual({ premios_disponibles: 2, sellos_actuales: 0 });
 
+    const activa = await fila<{ etapas: unknown }>(`select etapas from reglas where activa`);
+    expect(activa.etapas).toEqual([{ corte: 3, descripcion: "Corte gratis" }]);
+
     await conRol(como(BARBERO), () =>
-      db.query(`select guardar_regla(5, '50% off en el siguiente corte')`),
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [JSON.stringify(ETAPAS_SEED)]),
     );
   });
 
   it("guardar_regla valida los valores", async () => {
     await conRol(como(BARBERO), async () => {
-      await esperarError(db.query(`select guardar_regla(0, 'Nada')`), /reglas_cortes_rango/);
-      await esperarError(db.query(`select guardar_regla(5, 'x')`), /reglas_descripcion_largo/);
+      await esperarError(db.query(`select guardar_regla(0, 'Nada')`), /etapas_invalidas/);
+      await esperarError(db.query(`select guardar_regla(31, 'Mucho')`), /etapas_invalidas/);
+      await esperarError(db.query(`select guardar_regla(5, 'x')`), /etapas_invalidas/);
     });
     expect(await contar(`select * from reglas where activa`)).toBe(1);
   });
@@ -1030,5 +1076,492 @@ describe("dueño: precios, montos y facturación", () => {
       db.query(`update perfiles set es_dueno = true where id = $1`, [JUAN]),
       /perfiles_dueno_es_barbero/,
     );
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Premios por etapas (migración 20261023000100).
+// ════════════════════════════════════════════════════════════════════════════
+
+type Premio = {
+  corte: number;
+  descripcion: string;
+  ganados: number;
+  canjeados: number;
+  disponibles: number;
+};
+
+let clientesCreados = 0;
+
+/** Crea un cliente de prueba con `cortes` cortes viejos (de hace días). */
+async function nuevoCliente(cortes: number): Promise<string> {
+  clientesCreados++;
+  const n = String(clientesCreados).padStart(12, "0");
+  const id = `e1000000-0000-4000-8000-${n}`;
+  await db.exec(`insert into auth.users (id, email) values ('${id}', 'etapas${n}@x.com')`);
+  await db.exec(
+    `insert into perfiles (id, nombre, telefono) values ('${id}', 'Cliente ${n}', '29${n.slice(-8)}')`,
+  );
+  await agregarCortesViejos(id, cortes);
+  return id;
+}
+
+async function agregarCortesViejos(id: string, cantidad: number) {
+  if (cantidad <= 0) return;
+  await db.exec(`
+    insert into cortes (cliente_id, fecha, registrado_por)
+    select '${id}', now() - make_interval(days => 400 - g), '${BARBERO}'
+    from generate_series(1, ${cantidad}) g`);
+}
+
+/** Suma un corte por la función (como el panel), salteando el límite de 60 segundos. */
+async function sumarCorte(id: string, rol: Rol = como(BARBERO)) {
+  await db.exec(
+    `update cortes set fecha = fecha - interval '2 minutes' where cliente_id = '${id}'`,
+  );
+  return conRol(rol, () => fila<{ id: string }>(`select * from registrar_corte($1)`, [id]));
+}
+
+async function premiosDe(id: string) {
+  return conRol(como(BARBERO), () =>
+    fila<{ premios: Premio[]; premios_disponibles: number; sellos_actuales: number }>(
+      `select premios, premios_disponibles, sellos_actuales from resumen_clientes where id = $1`,
+      [id],
+    ),
+  );
+}
+
+const disponibles = (premios: Premio[]) =>
+  Object.fromEntries(premios.map((p) => [p.corte, p.disponibles]));
+
+function canjear(id: string, etapa: number | null, solicitud: string | null = null) {
+  return conRol(como(BARBERO), () =>
+    fila<{ id: string; etapa: number; premio_descripcion: string }>(
+      `select * from canjear_premio($1, $2, $3)`,
+      [id, solicitud, etapa],
+    ),
+  );
+}
+
+describe("premios por etapas: ganar y canjear", () => {
+  let cliente = "";
+
+  it("gana cada etapa al llegar a su corte", async () => {
+    cliente = await nuevoCliente(3);
+    expect(disponibles((await premiosDe(cliente)).premios)).toEqual({ 4: 0, 7: 0, 10: 0 });
+
+    await sumarCorte(cliente); // 4.º corte
+    let r = await premiosDe(cliente);
+    expect(disponibles(r.premios)).toEqual({ 4: 1, 7: 0, 10: 0 });
+    expect(r).toMatchObject({ premios_disponibles: 1, sellos_actuales: 4 });
+
+    await agregarCortesViejos(cliente, 3); // 7 cortes
+    r = await premiosDe(cliente);
+    expect(disponibles(r.premios)).toEqual({ 4: 1, 7: 1, 10: 0 });
+    expect(r.premios_disponibles).toBe(2);
+  });
+
+  it("al completar la tarjeta vuelve a empezar y los premios ganados no vencen", async () => {
+    await agregarCortesViejos(cliente, 3); // 10 cortes: tarjeta completa
+    let r = await premiosDe(cliente);
+    expect(disponibles(r.premios)).toEqual({ 4: 1, 7: 1, 10: 1 });
+    expect(r).toMatchObject({ premios_disponibles: 3, sellos_actuales: 0 });
+
+    await agregarCortesViejos(cliente, 4); // 14 cortes: segunda vuelta, etapa 4 otra vez
+    r = await premiosDe(cliente);
+    expect(disponibles(r.premios)).toEqual({ 4: 2, 7: 1, 10: 1 });
+    expect(r).toMatchObject({ premios_disponibles: 4, sellos_actuales: 4 });
+  });
+
+  it("canjea el premio que elige el barbero y guarda su etapa y descripción", async () => {
+    const canje = await canjear(cliente, 7, "f1000000-0000-4000-8000-000000000001");
+    expect(canje).toMatchObject({ etapa: 7, premio_descripcion: "50% off" });
+    const r = await premiosDe(cliente);
+    expect(disponibles(r.premios)).toEqual({ 4: 2, 7: 0, 10: 1 });
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select canjear_premio($1, null, 7)`, [cliente]), /sin_premios/),
+    );
+  });
+
+  it("es idempotente: la misma solicitud devuelve el mismo canje", async () => {
+    const antes = await contar(`select * from canjes where cliente_id = $1`, [cliente]);
+    const repetido = await canjear(cliente, 10, "f1000000-0000-4000-8000-000000000001");
+    expect(repetido).toMatchObject({ etapa: 7 });
+    expect(await contar(`select * from canjes where cliente_id = $1`, [cliente])).toBe(antes);
+
+    const a = await canjear(cliente, 10, "f1000000-0000-4000-8000-000000000002");
+    const b = await canjear(cliente, 10, "f1000000-0000-4000-8000-000000000002");
+    expect(a.id).toBe(b.id);
+    expect(disponibles((await premiosDe(cliente)).premios)).toEqual({ 4: 2, 7: 0, 10: 0 });
+  });
+
+  it("sin etapa canjea el primer premio disponible, hasta que no queda ninguno", async () => {
+    expect(await canjear(cliente, null)).toMatchObject({ etapa: 4, premio_descripcion: "20% off" });
+    expect(await canjear(cliente, null)).toMatchObject({ etapa: 4 });
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select canjear_premio($1)`, [cliente]), /sin_premios/),
+    );
+    const r = await premiosDe(cliente);
+    expect(r.premios_disponibles).toBe(0);
+    expect(await contar(`select * from canjes where cliente_id = $1`, [cliente])).toBe(4);
+  });
+
+  it("no se puede canjear lo que no se ganó", async () => {
+    const otro = await nuevoCliente(6);
+    await conRol(como(BARBERO), async () => {
+      await esperarError(db.query(`select canjear_premio($1, null, 7)`, [otro]), /sin_premios/);
+      await esperarError(db.query(`select canjear_premio($1, null, 10)`, [otro]), /sin_premios/);
+      await esperarError(
+        db.query(`select canjear_premio($1, null, 8)`, [otro]),
+        /etapa_inexistente/,
+      );
+    });
+    expect(await canjear(otro, 4)).toMatchObject({ etapa: 4 });
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select canjear_premio($1, null, 4)`, [otro]), /sin_premios/),
+    );
+  });
+
+  it("el empleado también canjea premios eligiendo la etapa", async () => {
+    const otro = await nuevoCliente(7);
+    const canje = await conRol(como(EMPLEADO), () =>
+      fila<{ etapa: number; registrado_por: string }>(`select * from canjear_premio($1, null, 7)`, [
+        otro,
+      ]),
+    );
+    expect(canje).toEqual(expect.objectContaining({ etapa: 7, registrado_por: EMPLEADO }));
+  });
+});
+
+describe("premios por etapas: deshacer corte", () => {
+  it("deshace el corte que ganó una etapa si ese premio no se canjeó", async () => {
+    const id = await nuevoCliente(6);
+    const septimo = await sumarCorte(id);
+    expect(disponibles((await premiosDe(id)).premios)).toEqual({ 4: 1, 7: 1, 10: 0 });
+    // Canjea el de la etapa 4 (ganado antes): el 7.º corte se puede deshacer igual.
+    await canjear(id, 4);
+    await conRol(como(BARBERO), () => db.query(`select deshacer_corte($1)`, [septimo.id]));
+    expect(disponibles((await premiosDe(id)).premios)).toEqual({ 4: 0, 7: 0, 10: 0 });
+  });
+
+  it("no deshace el corte que ganó una etapa ya canjeada, aunque queden otros premios", async () => {
+    const id = await nuevoCliente(6);
+    const septimo = await sumarCorte(id);
+    await canjear(id, 7);
+    // Sigue teniendo el 20% off, pero el 50% off ya lo usó: no se puede deshacer.
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select deshacer_corte($1)`, [septimo.id]), /premio_ya_canjeado/),
+    );
+    expect(await contar(`select * from cortes where id = $1`, [septimo.id])).toBe(1);
+  });
+
+  it("deshace un corte que no ganó nada aunque tenga canjes", async () => {
+    const id = await nuevoCliente(7);
+    await canjear(id, 7);
+    await canjear(id, 4);
+    const octavo = await sumarCorte(id);
+    await conRol(como(BARBERO), () => db.query(`select deshacer_corte($1)`, [octavo.id]));
+    expect(await contar(`select * from cortes where id = $1`, [octavo.id])).toBe(0);
+  });
+});
+
+describe("premios por etapas: configuración de la regla", () => {
+  async function guardarEtapas(etapas: unknown, rol: Rol = como(BARBERO)) {
+    return conRol(rol, () =>
+      fila<{ id: string; etapas: unknown; cortes_necesarios: number; descripcion_premio: string }>(
+        `select * from guardar_regla_etapas($1::jsonb)`,
+        [JSON.stringify(etapas)],
+      ),
+    );
+  }
+
+  it("ordena las etapas, recorta espacios y mantiene las columnas de antes", async () => {
+    const r = await guardarEtapas([
+      { corte: 8, descripcion: "  Corte gratis " },
+      { corte: 3, descripcion: "Lavado de regalo" },
+    ]);
+    expect(r).toMatchObject({
+      etapas: [
+        { corte: 3, descripcion: "Lavado de regalo" },
+        { corte: 8, descripcion: "Corte gratis" },
+      ],
+      cortes_necesarios: 8,
+      descripcion_premio: "Corte gratis",
+    });
+    // Las mismas etapas: no crea otra versión.
+    const igual = await guardarEtapas([
+      { corte: 3, descripcion: "Lavado de regalo" },
+      { corte: 8, descripcion: "Corte gratis" },
+    ]);
+    expect(igual.id).toBe(r.id);
+    expect(await contar(`select * from reglas where activa`)).toBe(1);
+  });
+
+  it("valida las etapas en la base", async () => {
+    const malas: unknown[] = [
+      [],
+      [{ corte: 0, descripcion: "Nada" }],
+      [{ corte: 31, descripcion: "Muy lejos" }],
+      [{ corte: 4.5, descripcion: "Medio corte" }],
+      [{ corte: "4", descripcion: "Texto" }],
+      [{ corte: 4, descripcion: "x" }],
+      [{ corte: 4, descripcion: "x".repeat(121) }],
+      [{ corte: 4 }],
+      [
+        { corte: 4, descripcion: "Repetido" },
+        { corte: 4, descripcion: "Otra vez" },
+      ],
+      Array.from({ length: 7 }, (_, i) => ({ corte: i + 1, descripcion: `Premio ${i + 1}` })),
+      { corte: 4, descripcion: "No es una lista" },
+    ];
+    const antes = await fila<{ id: string }>(`select id from reglas where activa`);
+    for (const etapas of malas) {
+      await esperarError(guardarEtapas(etapas), /etapas_invalidas/);
+    }
+    // Seis etapas y tarjeta de 30 cortes: el máximo.
+    const seis = [5, 10, 15, 20, 25, 30].map((corte) => ({
+      corte,
+      descripcion: `Premio ${corte}`,
+    }));
+    expect((await guardarEtapas(seis)).cortes_necesarios).toBe(30);
+    expect((await fila<{ id: string }>(`select id from reglas where activa`)).id).not.toBe(
+      antes.id,
+    );
+    // Ni siquiera el superusuario puede guardar etapas inválidas o inconsistentes.
+    await esperarError(
+      db.query(`update reglas set etapas = '[{"corte": 3, "descripcion": "a"}]' where activa`),
+      /violates check constraint "reglas_/,
+    );
+    await guardarEtapas(ETAPAS_SEED);
+  });
+
+  it("solo el dueño configura las etapas", async () => {
+    const antes = await fila<{ id: string }>(`select id from reglas where activa`);
+    const etapas = [{ corte: 1, descripcion: "Todo gratis" }];
+    await esperarError(guardarEtapas(etapas, como(EMPLEADO)), /no_autorizado/);
+    await esperarError(guardarEtapas(etapas, como(JUAN)), /no_autorizado/);
+    await esperarError(guardarEtapas(etapas, ANON), SIN_PERMISO);
+    await conRol(como(EMPLEADO), () =>
+      esperarError(db.query(`update reglas set etapas = '[]'`), SIN_PERMISO),
+    );
+    await conRol(como(JUAN), () =>
+      esperarError(db.query(`insert into reglas (etapas) values ('[]')`), SIN_PERMISO),
+    );
+    expect((await fila<{ id: string }>(`select id from reglas where activa`)).id).toBe(antes.id);
+  });
+
+  it("cualquiera (sin login) ve las etapas de la regla activa", async () => {
+    const r = await conRol(ANON, () => filas<{ etapas: unknown }>(`select etapas from reglas`));
+    expect(r).toEqual([{ etapas: ETAPAS_SEED }]);
+  });
+});
+
+describe("premios por etapas: cambio de regla", () => {
+  it("se recalcula con todo el historial sin borrar canjes ni dejar disponibles negativos", async () => {
+    // 14 cortes con la regla 4/7/10: ganó 4 ×2, 7 y 10. Canjea el corte gratis y un 20% off.
+    const id = await nuevoCliente(14);
+    await canjear(id, 10);
+    await canjear(id, 4);
+    expect(disponibles((await premiosDe(id)).premios)).toEqual({ 4: 1, 7: 1, 10: 0 });
+    const canjesAntes = await filas(
+      `select id, etapa, premio_descripcion from canjes where cliente_id = $1 order by id`,
+      [id],
+    );
+
+    // El dueño cambia a "cada 20 cortes, un corte gratis": con 14 cortes no ganó nada
+    // y ya canjeó 2. No quedan disponibles negativos y los canjes siguen ahí.
+    await conRol(como(BARBERO), () => db.query(`select guardar_regla(20, 'Corte gratis')`));
+    let r = await premiosDe(id);
+    expect(r.premios).toEqual([
+      { corte: 20, descripcion: "Corte gratis", ganados: 0, canjeados: 0, disponibles: 0 },
+    ]);
+    expect(r).toMatchObject({ premios_disponibles: 0, sellos_actuales: 14 });
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select canjear_premio($1)`, [id]), /sin_premios/),
+    );
+
+    // Cambia a 3 etapas en otros cortes: 14 cortes = 4 vueltas de 3 + 2 (gana la etapa 2
+    // cinco veces y la 3 cuatro: 9). Los 2 canjes (de etapas que ya no existen) se
+    // descuentan desde la etapa de menor corte.
+    await conRol(como(BARBERO), () =>
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [
+        JSON.stringify([
+          { corte: 2, descripcion: "Lavado" },
+          { corte: 3, descripcion: "Corte gratis" },
+        ]),
+      ]),
+    );
+    r = await premiosDe(id);
+    expect(disponibles(r.premios)).toEqual({ 2: 3, 3: 4 });
+    expect(r.premios_disponibles).toBe(9 - 2);
+
+    // Si se vuelve a la regla anterior, cada canje vuelve a contar en su etapa.
+    await conRol(como(BARBERO), () =>
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [JSON.stringify(ETAPAS_SEED)]),
+    );
+    expect(disponibles((await premiosDe(id)).premios)).toEqual({ 4: 1, 7: 1, 10: 0 });
+    expect(
+      await filas(
+        `select id, etapa, premio_descripcion from canjes where cliente_id = $1 order by id`,
+        [id],
+      ),
+    ).toEqual(canjesAntes);
+  });
+
+  it("si una etapa queda con más canjes que premios, el sobrante se descuenta de otras", async () => {
+    // 7 cortes, canjeó el 50% off de la etapa 7. La etapa 7 pasa al corte 8.
+    const id = await nuevoCliente(7);
+    await canjear(id, 7);
+    await conRol(como(BARBERO), () =>
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [
+        JSON.stringify([
+          { corte: 4, descripcion: "20% off" },
+          { corte: 7, descripcion: "50% off" },
+          { corte: 8, descripcion: "Corte gratis" },
+        ]),
+      ]),
+    );
+    // Ganó 4 y 7 (1 c/u), canjeó 1 de la 7: le queda el 20% off.
+    expect(disponibles((await premiosDe(id)).premios)).toEqual({ 4: 1, 7: 0, 8: 0 });
+
+    await conRol(como(BARBERO), () =>
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [
+        JSON.stringify([
+          { corte: 4, descripcion: "20% off" },
+          { corte: 9, descripcion: "Corte gratis" },
+        ]),
+      ]),
+    );
+    // La etapa 7 ya no existe: su canje se descuenta del 20% off. Total = 1 − 1 = 0.
+    const r = await premiosDe(id);
+    expect(disponibles(r.premios)).toEqual({ 4: 0, 9: 0 });
+    expect(r.premios_disponibles).toBe(0);
+
+    await conRol(como(BARBERO), () =>
+      db.query(`select guardar_regla_etapas($1::jsonb)`, [JSON.stringify(ETAPAS_SEED)]),
+    );
+  });
+
+  it("nunca hay disponibles negativos: total = max(0, ganados − canjes)", async () => {
+    const r = await filas<{ premios_disponibles: number; ganados: number; total_canjes: number }>(`
+      select premios_disponibles, total_canjes,
+             (select coalesce(sum((e->>'ganados')::int), 0) from jsonb_array_elements(premios) e)::int as ganados
+      from resumen_clientes`);
+    expect(r.length).toBeGreaterThan(10);
+    for (const x of r) {
+      expect(x.premios_disponibles).toBe(Math.max(0, x.ganados - x.total_canjes));
+    }
+  });
+});
+
+const MIGRACION_ETAPAS = "20261023000100_premios_por_etapas.sql";
+
+describe("migración de premios por etapas sobre una base con datos (como producción)", () => {
+  it("ningún cliente cambia lo que ve ni lo que tiene disponible, y la app anterior sigue andando", async () => {
+    const base = new PGlite({ extensions: { pg_trgm, pgcrypto } });
+    const ejecutar = (sql: string) => base.exec(sql);
+    const leer = async <T>(sql: string, params: unknown[] = []) =>
+      (await base.query<T>(sql, params)).rows;
+    const comoRol = async <T>(sub: string | null, fn: () => Promise<T>) => {
+      const claims = sub ? { role: "authenticated", sub } : { role: "anon" };
+      await ejecutar(
+        `select set_config('request.jwt.claims', '${JSON.stringify(claims)}', false); set role ${sub ? "authenticated" : "anon"};`,
+      );
+      try {
+        return await fn();
+      } finally {
+        await ejecutar(`reset role; select set_config('request.jwt.claims', '', false);`);
+      }
+    };
+    const resumen = () =>
+      comoRol(BARBERO, () =>
+        leer<Record<string, unknown>>(
+          `select id, total_cortes, total_canjes, cortes_necesarios, descripcion_premio,
+                  sellos_actuales, premios_disponibles
+           from resumen_clientes order by id`,
+        ),
+      );
+
+    try {
+      await ejecutar(readFileSync(join(RAIZ, "tests/supabase-stubs.sql"), "utf8"));
+      const archivos = readdirSync(join(RAIZ, "migrations")).sort();
+      expect(archivos.at(-1)).toBe(MIGRACION_ETAPAS);
+      for (const a of archivos.filter((x) => x < MIGRACION_ETAPAS)) {
+        await ejecutar(readFileSync(join(RAIZ, "migrations", a), "utf8"));
+      }
+
+      // Producción antes de la migración: la regla fue "cada 5" y hoy es "cada 6".
+      const clientes = [0, 2, 5, 6, 7, 10, 12, 13, 18, 25];
+      const canjesPor = [0, 0, 0, 1, 0, 2, 2, 1, 3, 4]; // algunos con más canjes que premios hoy
+      await ejecutar(`
+        insert into auth.users (id, email) values ('${BARBERO}', 'dueno@x.com');
+        insert into perfiles (id, nombre, rol, debe_cambiar_password, es_dueno)
+        values ('${BARBERO}', 'Leandro', 'barbero', false, true);
+        update reglas set created_at = now() - interval '300 days';
+      `);
+      for (const [i, cortes] of clientes.entries()) {
+        const id = `e2000000-0000-4000-8000-${String(i).padStart(12, "0")}`;
+        await ejecutar(`
+          insert into auth.users (id, email) values ('${id}', 'm${i}@x.com');
+          insert into perfiles (id, nombre, telefono) values ('${id}', 'Cliente ${i}', '28000000${String(i).padStart(2, "0")}');
+          insert into cortes (cliente_id, fecha, registrado_por, monto)
+          select '${id}', now() - make_interval(days => 250 - g), '${BARBERO}', 9000
+          from generate_series(1, ${cortes}) g;
+          insert into canjes (cliente_id, fecha, registrado_por, premio_descripcion)
+          select '${id}', now() - make_interval(days => 200 - g), '${BARBERO}', '50% off en el siguiente corte'
+          from generate_series(1, ${canjesPor[i]}) g;`);
+      }
+      await comoRol(BARBERO, () => leer(`select guardar_regla(6, 'Corte gratis')`));
+      await ejecutar(`update reglas set created_at = now() - interval '100 days' where activa`);
+
+      const antes = await resumen();
+      expect(antes.some((c) => Number(c.premios_disponibles) > 0)).toBe(true);
+      await ejecutar(readFileSync(join(RAIZ, "migrations", MIGRACION_ETAPAS), "utf8"));
+      const despues = await resumen();
+      expect(despues).toEqual(antes);
+
+      // La regla quedó como una etapa, y el historial también.
+      const reglas = await leer<{ activa: boolean; etapas: unknown }>(
+        `select activa, etapas from reglas order by created_at`,
+      );
+      expect(reglas).toEqual([
+        { activa: false, etapas: [{ corte: 5, descripcion: "50% off en el siguiente corte" }] },
+        { activa: true, etapas: [{ corte: 6, descripcion: "Corte gratis" }] },
+      ]);
+      // Los canjes viejos quedaron con la etapa de la regla de su momento (cada 5).
+      expect(await leer(`select distinct etapa from canjes`)).toEqual([{ etapa: 5 }]);
+
+      // La versión anterior de la app: lee las columnas de antes, canjea sin etapa
+      // y guarda reglas "cada N cortes".
+      const anon = await comoRol(null, () =>
+        leer(`select cortes_necesarios, descripcion_premio from reglas`),
+      );
+      expect(anon).toEqual([{ cortes_necesarios: 6, descripcion_premio: "Corte gratis" }]);
+      const conPremio = despues.find((c) => Number(c.premios_disponibles) > 0)!;
+      const [canje] = await comoRol(BARBERO, () =>
+        leer<{ premio_descripcion: string; etapa: number }>(
+          `select * from canjear_premio(p_cliente_id => $1, p_solicitud_id => 'a0000000-0000-4000-8000-000000000009')`,
+          [conPremio.id],
+        ),
+      );
+      expect(canje).toMatchObject({ premio_descripcion: "Corte gratis", etapa: 6 });
+      const [luego] = await comoRol(BARBERO, () =>
+        leer<{ premios_disponibles: number }>(
+          `select premios_disponibles from resumen_clientes where id = $1`,
+          [conPremio.id],
+        ),
+      );
+      expect(luego?.premios_disponibles).toBe(Number(conPremio.premios_disponibles) - 1);
+      await comoRol(BARBERO, () => leer(`select guardar_regla(8, '  Corte gratis  ')`));
+      const [nueva] = await leer<{ etapas: unknown; cortes_necesarios: number }>(
+        `select etapas, cortes_necesarios from reglas where activa`,
+      );
+      expect(nueva).toEqual({
+        etapas: [{ corte: 8, descripcion: "Corte gratis" }],
+        cortes_necesarios: 8,
+      });
+    } finally {
+      await base.close();
+    }
   });
 });

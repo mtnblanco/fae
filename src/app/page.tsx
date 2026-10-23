@@ -1,10 +1,20 @@
-import { ArrowRight, AtSign, MapPin, MessageCircle, QrCode, Store, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  AtSign,
+  Gift,
+  MapPin,
+  MessageCircle,
+  QrCode,
+  Store,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Logo } from "@/components/marca/logo";
 import { Button } from "@/components/ui/button";
 import { sitio } from "@/config/site";
 import { reglaPublica } from "@/lib/datos/publico";
+import { enFrase, textoCortes } from "@/lib/progreso";
 import { RUTAS } from "@/lib/rutas";
 
 // La regla puede cambiar desde el panel: se revisa cada hora (y al guardarla).
@@ -24,14 +34,16 @@ const PASOS = [
   {
     icono: Store,
     titulo: "Disfrutás los premios",
-    texto: "Completás la tarjeta y ganás tu premio. Además, tenés descuentos en comercios amigos.",
+    texto: "Llegás a cada etapa y ganás su premio. Además, tenés descuentos en comercios amigos.",
   },
 ];
 
 export default async function Inicio() {
-  const regla = await reglaPublica();
-  const n = regla.cortes_necesarios;
+  const { etapas } = await reglaPublica();
+  const n = etapas.at(-1)!.corte;
   const demoLlenos = Math.max(1, Math.min(n - 1, Math.ceil(n * 0.6)));
+  const demoProxima = etapas.find((e) => e.corte > demoLlenos) ?? etapas.at(-1)!;
+  const varias = etapas.length > 1;
 
   return (
     <div className="relative isolate min-h-dvh overflow-x-clip">
@@ -60,9 +72,31 @@ export default async function Inicio() {
               Cada corte <span className="neon block">suma.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-arena">
-              Juntá {n} sellos y llevate{" "}
-              <span className="text-marfil">{regla.descripcion_premio.toLowerCase()}</span>. Tu
-              carnet vive en el celular: sin tarjetas de cartón que se pierden.
+              {varias ? (
+                etapas.length <= 3 ? (
+                  <>
+                    Juntá sellos y ganá{" "}
+                    {etapas.map((e, k) => (
+                      <span key={e.corte}>
+                        {k === 0 ? "" : k === etapas.length - 1 ? " y " : ", "}
+                        <span className="text-marfil">{enFrase(e.descripcion)}</span>
+                      </span>
+                    ))}
+                    , en el camino.
+                  </>
+                ) : (
+                  <>
+                    Juntá sellos y ganá{" "}
+                    <span className="text-marfil">{etapas.length} premios en el camino</span>.
+                  </>
+                )
+              ) : (
+                <>
+                  Juntá {n} sellos y llevate{" "}
+                  <span className="text-marfil">{enFrase(etapas[0]!.descripcion)}</span>.
+                </>
+              )}{" "}
+              Tu carnet vive en el celular: sin tarjetas de cartón que se pierden.
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Button asChild size="xl" variant="neon">
@@ -92,18 +126,70 @@ export default async function Inicio() {
                 <p className="mt-16 font-titulo text-[2rem] leading-none sm:mt-20">Tu nombre</p>
                 <GrillaSellos
                   total={n}
+                  premios={etapas.map((e) => e.corte)}
                   llenos={demoLlenos}
                   nuevos={demoLlenos}
                   tamano="lg"
                   className="mt-5"
                 />
                 <p className="mt-4 text-sm text-arena">
-                  {demoLlenos} de {n}. Te faltan {n - demoLlenos} para el premio.
+                  {demoLlenos} de {n}. Te{" "}
+                  {demoProxima.corte - demoLlenos === 1 ? "falta" : "faltan"}{" "}
+                  {textoCortes(demoProxima.corte - demoLlenos)} para{" "}
+                  {varias ? enFrase(demoProxima.descripcion) : "el premio"}.
                 </p>
               </div>
             </div>
           </div>
         </section>
+
+        {varias ? (
+          <section aria-labelledby="titulo-premios" className="border-t border-hierro">
+            <div className="contenedor py-16 sm:py-20">
+              <div aria-hidden className="filete mb-6 w-14" />
+              <h2 id="titulo-premios" className="text-4xl sm:text-5xl">
+                Premios en el camino
+              </h2>
+              <p className="mt-4 max-w-xl leading-relaxed text-arena">
+                Cada corte es un sello. Al llegar a cada etapa ganás su premio y lo usás cuando
+                quieras: no se vence. Al completar la tarjeta, empieza de nuevo.
+              </p>
+              <ol className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {etapas.map((e, i) => {
+                  const ultima = i === etapas.length - 1;
+                  return (
+                    <li
+                      key={e.corte}
+                      className={
+                        ultima
+                          ? "textura-grano relative flex items-center gap-5 rounded-2xl border border-oro/50 bg-ebano p-5 sm:p-6"
+                          : "relative flex items-center gap-5 rounded-2xl border border-hierro bg-ebano/60 p-5 sm:p-6"
+                      }
+                    >
+                      <span className="numeros w-[4.5rem] shrink-0 font-titulo text-[3.25rem] leading-none text-oro">
+                        {e.corte}
+                        <span className="align-top text-2xl">.º</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="etiqueta block text-arena">
+                          {ultima ? "Corte · completa la tarjeta" : "Corte"}
+                        </span>
+                        <span className="mt-1 block text-xl leading-snug break-words text-marfil">
+                          {e.descripcion}
+                        </span>
+                      </span>
+                      <Gift
+                        className="size-5 shrink-0 self-start text-oro/80"
+                        strokeWidth={1.75}
+                        aria-hidden
+                      />
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </section>
+        ) : null}
 
         <section aria-labelledby="titulo-como" className="border-t border-hierro bg-ebano/40">
           <div className="contenedor py-16 sm:py-20">

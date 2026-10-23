@@ -5,7 +5,13 @@ import { QrCode, RotateCcw } from "lucide-react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { Logo } from "@/components/marca/logo";
 import { Button } from "@/components/ui/button";
-import { calcularProgreso, textoCortes } from "@/lib/progreso";
+import {
+  calcularProgreso,
+  enFrase,
+  type Etapa,
+  type PremioEtapa,
+  textoCortes,
+} from "@/lib/progreso";
 import { cn } from "@/lib/utils";
 import { Celebracion } from "./celebracion";
 import { GrillaSellos } from "./sellos";
@@ -15,10 +21,11 @@ type Props = {
     id: string;
     nombre: string;
     total_cortes: number;
-    sellos_actuales: number;
     premios_disponibles: number;
     cortes_necesarios: number | null;
     descripcion_premio: string | null;
+    etapas: Etapa[] | null;
+    premios: PremioEtapa[];
   };
   socioDesde: string;
   numeroSocio: string;
@@ -168,12 +175,13 @@ export function TarjetaCarnet({ cliente, socioDesde, numeroSocio, qrSvg }: Props
                 <GrillaSellos
                   key={claveGrilla}
                   total={p.necesarios}
+                  premios={p.etapas.map((e) => e.corte)}
                   llenos={p.mostrados}
                   nuevos={nuevos}
                   tamano="lg"
                 />
                 <p className="mt-4 text-sm leading-snug text-arena" aria-live="polite">
-                  {p.faltan === 0 ? (
+                  {!p.proxima ? (
                     <span className="font-medium text-oro-claro">
                       ¡Tarjeta completa! Tu premio te espera.
                     </span>
@@ -183,7 +191,7 @@ export function TarjetaCarnet({ cliente, socioDesde, numeroSocio, qrSvg }: Props
                         {p.mostrados} de {p.necesarios}
                       </span>
                       . Te {p.faltan === 1 ? "falta" : "faltan"} {textoCortes(p.faltan)} para{" "}
-                      {cliente.descripcion_premio?.toLowerCase()}.
+                      <span className="text-marfil">{enFrase(p.proxima.descripcion)}</span>.
                     </>
                   )}
                 </p>

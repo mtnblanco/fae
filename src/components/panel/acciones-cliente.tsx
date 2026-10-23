@@ -1,17 +1,24 @@
 "use client";
 
-import { Gift, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { canjearPremio, deshacerCorte } from "@/app/panel/clientes/acciones";
 import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
-import { Confirmar } from "@/components/comunes/confirmar";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
 import { useSumarCorte } from "@/hooks/use-sumar-corte";
 import { formatearPesos } from "@/lib/dinero";
-import { calcularProgreso, textoCortes } from "@/lib/progreso";
+import {
+  calcularProgreso,
+  enFrase,
+  type Etapa,
+  etapaAlcanzada,
+  type PremioEtapa,
+  textoCortes,
+} from "@/lib/progreso";
+import { BotonCanjear, ListaPremios } from "./boton-canjear";
 import { CampoMonto } from "./campo-monto";
 
 type Props = {
@@ -19,24 +26,24 @@ type Props = {
     id: string;
     nombre: string;
     total_cortes: number;
-    sellos_actuales: number;
     premios_disponibles: number;
     cortes_necesarios: number | null;
     descripcion_premio: string | null;
+    etapas: Etapa[] | null;
+    premios: PremioEtapa[];
     precio_habitual: number | null;
   };
 };
 
 /**
  * Avance de la tarjeta del cliente y acciones del barbero: sumar corte (con el
- * monto precargado con su precio habitual) y canjear premio.
+ * monto precargado con su precio habitual) y canjear premio (eligiendo cuál).
  */
 export function AccionesCliente({ cliente }: Props) {
   const p = calcularProgreso(cliente);
   const primerNombre = cliente.nombre.split(" ")[0];
   const sumar = useSumarCorte(cliente.id, cliente.precio_habitual);
   const canjear = useAccionUnica();
-  const [confirmarCanje, setConfirmarCanje] = useState(false);
   const [festejo, setFestejo] = useState(0);
 
   // Detecta sellos nuevos entre renders para "estamparlos" (patrón de estado derivado).
@@ -49,15 +56,17 @@ export function AccionesCliente({ cliente }: Props) {
 
   function alSumar() {
     sumar.sumar((datos) => {
-      const premiosAhora = datos.cliente?.premios_disponibles ?? 0;
-      const completo = premiosAhora > cliente.premios_disponibles;
-      if (completo) setFestejo((n) => n + 1);
+      const total = datos.cliente?.total_cortes ?? cliente.total_cortes + 1;
+      const ganado = etapaAlcanzada(p.etapas, total);
+      if (ganado) setFestejo((n) => n + 1);
       const cobrado =
         datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`;
       toast.success(
-        completo ? `¡${primerNombre} completó la tarjeta!` : `Corte sumado a ${primerNombre}`,
+        ganado
+          ? `¡${primerNombre} ganó ${enFrase(ganado.descripcion)}!`
+          : `Corte sumado a ${primerNombre}`,
         {
-          description: completo ? `${cobrado}. Ya tiene un premio para canjear.` : cobrado,
+          description: ganado ? `${cobrado}. Ya lo puede canjear.` : cobrado,
           duration: 8000,
           action: {
             label: "Deshacer",
@@ -72,9 +81,9 @@ export function AccionesCliente({ cliente }: Props) {
     });
   }
 
-  function alCanjear() {
+  function alCanjear(etapa: number) {
     canjear.ejecutar(async (solicitudId) => {
-      const r = await canjearPremio(cliente.id, solicitudId);
+      const r = await canjearPremio(cliente.id, solicitudId, etapa);
       if (r.ok) toast.success("Premio canjeado", { description: r.datos.premio });
       else toast.error(r.error);
     });
@@ -100,20 +109,19 @@ export function AccionesCliente({ cliente }: Props) {
             <span className="text-marfil">{p.mostrados}</span> de {p.necesarios}
           </p>
         </div>
-        <GrillaSellos total={p.necesarios} llenos={p.mostrados} nuevos={nuevos} className="mt-4" />
+        <GrillaSellos
+          total={p.necesarios}
+          premios={p.etapas.map((e) => e.corte)}
+          llenos={p.mostrados}
+          nuevos={nuevos}
+          className="mt-4"
+        />
         <p className="mt-4 text-sm text-arena">
-          {p.faltan === 0
-            ? `Completó la tarjeta: ${cliente.descripcion_premio}.`
-            : `Le ${p.faltan === 1 ? "falta" : "faltan"} ${textoCortes(p.faltan)} para: ${cliente.descripcion_premio}.`}
+          {p.proxima
+            ? `Le ${p.faltan === 1 ? "falta" : "faltan"} ${textoCortes(p.faltan)} para: ${p.proxima.descripcion}.`
+            : `Completó la tarjeta: ${cliente.descripcion_premio ?? p.etapas.at(-1)?.descripcion}.`}
         </p>
-        {p.premiosDisponibles > 0 ? (
-          <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-oro/40 bg-oro/10 px-3 py-1.5 text-sm font-medium text-oro-claro">
-            <Gift className="size-4" aria-hidden />
-            {p.premiosDisponibles === 1
-              ? "Tiene 1 premio para canjear"
-              : `Tiene ${p.premiosDisponibles} premios para canjear`}
-          </p>
-        ) : null}
+        <ListaPremios disponibles={p.disponibles} prefijo="Tiene para canjear:" />
       </div>
 
       <CampoMonto
@@ -139,27 +147,12 @@ export function AccionesCliente({ cliente }: Props) {
           )}
           {sumar.pendiente ? "Sumando…" : "Sumar corte"}
         </Button>
-        <Confirmar
-          abierto={confirmarCanje}
-          onAbiertoChange={setConfirmarCanje}
-          disparador={
-            <Button
-              size="xl"
-              variant="oro"
-              disabled={p.premiosDisponibles === 0 || canjear.pendiente}
-            >
-              {canjear.pendiente ? (
-                <Loader2 className="animate-spin" aria-hidden />
-              ) : (
-                <Gift aria-hidden />
-              )}
-              {canjear.pendiente ? "Canjeando…" : "Canjear premio"}
-            </Button>
-          }
-          titulo="¿Canjear el premio?"
-          descripcion={`${primerNombre} va a usar su premio: ${cliente.descripcion_premio}. Esta acción no se puede deshacer.`}
-          textoConfirmar="Sí, canjear"
-          onConfirmar={alCanjear}
+        <BotonCanjear
+          primerNombre={primerNombre ?? cliente.nombre}
+          disponibles={p.disponibles}
+          pendiente={canjear.pendiente}
+          onCanjear={alCanjear}
+          siempreVisible
         />
       </div>
     </section>

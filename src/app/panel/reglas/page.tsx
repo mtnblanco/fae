@@ -3,6 +3,7 @@ import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { FormularioRegla } from "@/components/panel/formulario-regla";
 import { obtenerReglas } from "@/lib/datos/panel";
 import { formatearFechaCorta } from "@/lib/fechas";
+import { etapasDe, resumenRegla } from "@/lib/progreso";
 import { requireDueno } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Premios" };
@@ -15,12 +16,9 @@ export default async function PaginaReglas() {
     <>
       <EncabezadoPagina
         titulo="Regla de premios"
-        descripcion="Cuántos cortes hacen falta para ganar un premio, y cuál es."
+        descripcion="En qué cortes gana un premio cada cliente, y cuál. Podés poner uno solo o varios en el camino."
       />
-      <FormularioRegla
-        cortes={activa?.cortes_necesarios ?? 5}
-        premio={activa?.descripcion_premio ?? ""}
-      />
+      <FormularioRegla etapas={activa ? etapasDe(activa) : [{ corte: 5, descripcion: "" }]} />
 
       {historial.length > 0 ? (
         <section aria-labelledby="titulo-historial-reglas" className="mt-12">
@@ -36,9 +34,7 @@ export default async function PaginaReglas() {
                   key={r.id}
                   className="grid grid-cols-1 gap-0.5 px-4 py-3 text-sm sm:flex sm:items-center sm:justify-between sm:gap-4"
                 >
-                  <span className="text-marfil">
-                    Cada {r.cortes_necesarios} cortes: {r.descripcion_premio}
-                  </span>
+                  <span className="text-marfil">{resumenRegla(etapasDe(r))}</span>
                   <span className="shrink-0 text-arena">
                     {formatearFechaCorta(r.created_at)}
                     {fin ? ` al ${formatearFechaCorta(fin)}` : ""}
