@@ -14,6 +14,9 @@ const MENSAJES_DB: Record<string, string> = {
   sin_premios: "Este cliente no tiene premios para canjear.",
   sin_regla: "No hay una regla de premios configurada.",
   solicitud_invalida: "La operación no es válida. Recargá la página e intentá de nuevo.",
+  corte_ajeno: "Solo podés deshacer los cortes que cargaste vos.",
+  monto_invalido: "Revisá el monto: escribilo como 8.000 o 8.500,50.",
+  periodo_invalido: "El período elegido no es válido.",
 };
 
 export const ERROR_GENERICO = "Algo salió mal. Probá de nuevo en un momento.";

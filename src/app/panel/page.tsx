@@ -1,11 +1,27 @@
-import { Gift, ScanLine, Scissors, Search, UserPlus } from "lucide-react";
+import {
+  BadgePercent,
+  ChevronRight,
+  Gift,
+  ScanLine,
+  Scissors,
+  Search,
+  Settings2,
+  UserPlus,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
+import { ResumenCaja } from "@/components/panel/resumen-caja";
 import { Button } from "@/components/ui/button";
 import { requireBarbero } from "@/lib/auth";
-import { actividadReciente, clientesConPremio, obtenerMetricas } from "@/lib/datos/panel";
+import {
+  actividadReciente,
+  clientesConPremio,
+  obtenerFacturacion,
+  obtenerMetricas,
+} from "@/lib/datos/panel";
 import { hoyISO, nombreDelMes, tiempoRelativo } from "@/lib/fechas";
+import { rangoPeriodo } from "@/lib/periodos";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
 import { saludo } from "@/lib/saludo";
 import { cn } from "@/lib/utils";
@@ -14,10 +30,13 @@ export const metadata: Metadata = { title: "Inicio" };
 
 export default async function PaginaPanel() {
   const { perfil } = await requireBarbero();
-  const [metricas, actividad, conPremio] = await Promise.all([
+  const esDueno = perfil.es_dueno;
+  const [metricas, actividad, conPremio, caja] = await Promise.all([
     obtenerMetricas(),
     actividadReciente(),
     clientesConPremio(),
+    // La caja es solo del dueño (la base se la niega al empleado).
+    esDueno ? obtenerFacturacion(rangoPeriodo("mes", hoyISO())) : Promise.resolve(null),
   ]);
   const mes = nombreDelMes();
   // Mes anterior según la fecha argentina (el servidor corre en UTC).
@@ -34,7 +53,8 @@ export default async function PaginaPanel() {
           : "Sin altas este mes",
     },
     {
-      etiqueta: `Cortes en ${mes}`,
+      // Para el empleado, metricas_panel cuenta solo sus cortes.
+      etiqueta: esDueno ? `Cortes en ${mes}` : `Tus cortes en ${mes}`,
       valor: metricas.cortes_mes,
       detalle: `${metricas.cortes_mes_anterior} en ${mesAnterior}`,
     },
@@ -98,6 +118,24 @@ export default async function PaginaPanel() {
           ))}
         </dl>
       </section>
+
+      {caja ? (
+        <section aria-labelledby="titulo-caja">
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <h2 id="titulo-caja" className="text-2xl first-letter:uppercase">
+              Caja de {mes}
+            </h2>
+            <Link
+              href={RUTAS.caja}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-md text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
+            >
+              Ver caja
+              <ChevronRight className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <ResumenCaja filas={caja} />
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8">
         <section aria-labelledby="titulo-premios">
@@ -194,6 +232,28 @@ export default async function PaginaPanel() {
           )}
         </section>
       </div>
+
+      {esDueno ? (
+        <section aria-labelledby="titulo-ajustes" className="lg:hidden">
+          <h2 id="titulo-ajustes" className="mb-4 text-2xl">
+            Configuración
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Button asChild size="lg" variant="outline" className="w-full">
+              <Link href={RUTAS.descuentos}>
+                <BadgePercent aria-hidden />
+                Descuentos
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="w-full">
+              <Link href={RUTAS.reglas}>
+                <Settings2 aria-hidden />
+                Premios
+              </Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

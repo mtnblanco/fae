@@ -15,17 +15,19 @@ import {
   canjearPremio,
   deshacerCorte,
   type EstadoCliente,
-  sumarCorte,
 } from "@/app/panel/clientes/acciones";
 import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Confirmar } from "@/components/comunes/confirmar";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
+import { useSumarCorte } from "@/hooks/use-sumar-corte";
+import { formatearPesos } from "@/lib/dinero";
 import { tiempoRelativo } from "@/lib/fechas";
 import { calcularProgreso, textoCortes } from "@/lib/progreso";
 import { idDesdeQr } from "@/lib/qr";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
+import { CampoMonto } from "./campo-monto";
 
 // El lector WebAssembly (para iPhone) se sirve desde la app, no desde un CDN.
 setZXingModuleOverrides({
@@ -52,7 +54,8 @@ export function Escaner() {
   const [estado, setEstado] = useState<Estado>({ fase: "escaneando" });
   const [festejo, setFestejo] = useState(0);
   const ultimoInvalido = useRef(0);
-  const sumar = useAccionUnica();
+  const clienteActual = estado.fase === "cliente" ? estado.cliente : null;
+  const sumar = useSumarCorte(clienteActual?.id ?? "", clienteActual?.precio_habitual ?? null);
   const canjear = useAccionUnica();
 
   async function alEscanear(codigos: IDetectedBarcode[]) {
@@ -111,24 +114,21 @@ export function Escaner() {
     const primerNombre = c.nombre.split(" ")[0];
 
     const alSumar = () =>
-      sumar.ejecutar(async (solicitudId) => {
-        const r = await sumarCorte(c.id, solicitudId);
-        if (!r.ok) {
-          toast.error(r.error);
-          return;
-        }
-        const nuevo = r.datos.cliente ?? c;
+      sumar.sumar((datos) => {
+        const nuevo = datos.cliente ?? c;
         const completo = nuevo.premios_disponibles > c.premios_disponibles;
         if (completo) setFestejo((n) => n + 1);
-        setEstado({ fase: "cliente", cliente: nuevo, corteSumado: r.datos.corteId, nuevos: 1 });
+        setEstado({ fase: "cliente", cliente: nuevo, corteSumado: datos.corteId, nuevos: 1 });
         toast.success(
           completo ? `¡${primerNombre} completó la tarjeta!` : `Corte sumado a ${primerNombre}`,
           {
+            description:
+              datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`,
             duration: 8000,
             action: {
               label: "Deshacer",
               onClick: async () => {
-                const d = await deshacerCorte(r.datos.corteId);
+                const d = await deshacerCorte(datos.corteId);
                 if (!d.ok) {
                   toast.error(d.error);
                   return;
@@ -206,14 +206,23 @@ export function Escaner() {
             Corte sumado
           </p>
         ) : (
-          <Button size="xl" onClick={alSumar} disabled={sumar.pendiente}>
-            {sumar.pendiente ? (
-              <Loader2 className="animate-spin" aria-hidden />
-            ) : (
-              <Plus aria-hidden />
-            )}
-            {sumar.pendiente ? "Sumando…" : "Sumar corte"}
-          </Button>
+          <>
+            <CampoMonto
+              valor={sumar.texto}
+              onCambio={sumar.cambiar}
+              invalido={sumar.invalido}
+              sinPrecio={c.precio_habitual === null}
+              disabled={sumar.pendiente}
+            />
+            <Button size="xl" onClick={alSumar} disabled={sumar.pendiente}>
+              {sumar.pendiente ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Plus aria-hidden />
+              )}
+              {sumar.pendiente ? "Sumando…" : "Sumar corte"}
+            </Button>
+          </>
         )}
 
         {p.premiosDisponibles > 0 ? (

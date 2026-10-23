@@ -15,7 +15,14 @@ import { generarPassword, PASSWORD_MIN } from "@/lib/password";
 import { rutaCliente } from "@/lib/rutas";
 import { type Credenciales, crearCliente } from "../acciones";
 
-export function FormularioAlta({ passwordInicial }: { passwordInicial: string }) {
+export function FormularioAlta({
+  passwordInicial,
+  conPrecio,
+}: {
+  passwordInicial: string;
+  /** Solo el dueño carga el precio habitual. */
+  conPrecio: boolean;
+}) {
   const [estado, accion] = useActionState<EstadoFormulario<Credenciales>, FormData>(
     crearCliente,
     ESTADO_INICIAL,
@@ -108,6 +115,35 @@ export function FormularioAlta({ passwordInicial }: { passwordInicial: string })
           />
         )}
       </Campo>
+
+      {conPrecio ? (
+        <Campo
+          etiqueta="Precio habitual (opcional)"
+          errores={errores?.precio}
+          ayuda="Lo que suele pagar por un corte. Se precarga cada vez que le sumás un corte."
+        >
+          {(a11y) => (
+            <div className="relative">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-arena"
+              >
+                $
+              </span>
+              <Input
+                {...a11y}
+                name="precio"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="8.000"
+                defaultValue={valores?.precio}
+                className="numeros pl-8"
+              />
+            </div>
+          )}
+        </Campo>
+      ) : null}
 
       <Campo
         etiqueta="Contraseña inicial"

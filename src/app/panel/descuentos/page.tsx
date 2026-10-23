@@ -9,10 +9,12 @@ import { listarDescuentos } from "@/lib/datos/panel";
 import { estadoDescuento, ETIQUETA_ESTADO } from "@/lib/descuentos";
 import { formatearDia, hoyISO } from "@/lib/fechas";
 import { cn } from "@/lib/utils";
+import { requireDueno } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Descuentos" };
 
 export default async function PaginaDescuentos() {
+  await requireDueno();
   const descuentos = await listarDescuentos();
   const hoy = hoyISO();
 

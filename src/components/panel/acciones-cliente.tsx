@@ -3,13 +3,16 @@
 import { Gift, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { canjearPremio, deshacerCorte, sumarCorte } from "@/app/panel/clientes/acciones";
+import { canjearPremio, deshacerCorte } from "@/app/panel/clientes/acciones";
 import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Confirmar } from "@/components/comunes/confirmar";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
+import { useSumarCorte } from "@/hooks/use-sumar-corte";
+import { formatearPesos } from "@/lib/dinero";
 import { calcularProgreso, textoCortes } from "@/lib/progreso";
+import { CampoMonto } from "./campo-monto";
 
 type Props = {
   cliente: {
@@ -20,14 +23,18 @@ type Props = {
     premios_disponibles: number;
     cortes_necesarios: number | null;
     descripcion_premio: string | null;
+    precio_habitual: number | null;
   };
 };
 
-/** Avance de la tarjeta del cliente y acciones del barbero (sumar corte / canjear premio). */
+/**
+ * Avance de la tarjeta del cliente y acciones del barbero: sumar corte (con el
+ * monto precargado con su precio habitual) y canjear premio.
+ */
 export function AccionesCliente({ cliente }: Props) {
   const p = calcularProgreso(cliente);
   const primerNombre = cliente.nombre.split(" ")[0];
-  const sumar = useAccionUnica();
+  const sumar = useSumarCorte(cliente.id, cliente.precio_habitual);
   const canjear = useAccionUnica();
   const [confirmarCanje, setConfirmarCanje] = useState(false);
   const [festejo, setFestejo] = useState(0);
@@ -41,24 +48,21 @@ export function AccionesCliente({ cliente }: Props) {
   }
 
   function alSumar() {
-    sumar.ejecutar(async (solicitudId) => {
-      const r = await sumarCorte(cliente.id, solicitudId);
-      if (!r.ok) {
-        toast.error(r.error);
-        return;
-      }
-      const premiosAhora = r.datos.cliente?.premios_disponibles ?? 0;
+    sumar.sumar((datos) => {
+      const premiosAhora = datos.cliente?.premios_disponibles ?? 0;
       const completo = premiosAhora > cliente.premios_disponibles;
       if (completo) setFestejo((n) => n + 1);
+      const cobrado =
+        datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`;
       toast.success(
         completo ? `¡${primerNombre} completó la tarjeta!` : `Corte sumado a ${primerNombre}`,
         {
-          description: completo ? "Ya tiene un premio para canjear." : undefined,
+          description: completo ? `${cobrado}. Ya tiene un premio para canjear.` : cobrado,
           duration: 8000,
           action: {
             label: "Deshacer",
             onClick: async () => {
-              const d = await deshacerCorte(r.datos.corteId);
+              const d = await deshacerCorte(datos.corteId);
               if (d.ok) toast.success("Corte deshecho");
               else toast.error(d.error);
             },
@@ -111,6 +115,14 @@ export function AccionesCliente({ cliente }: Props) {
           </p>
         ) : null}
       </div>
+
+      <CampoMonto
+        valor={sumar.texto}
+        onCambio={sumar.cambiar}
+        invalido={sumar.invalido}
+        sinPrecio={cliente.precio_habitual === null}
+        disabled={sumar.pendiente}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button

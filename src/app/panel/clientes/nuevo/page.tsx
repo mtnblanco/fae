@@ -2,13 +2,15 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
+import { requireBarbero } from "@/lib/auth";
 import { generarPassword } from "@/lib/password";
 import { RUTAS } from "@/lib/rutas";
 import { FormularioAlta } from "./formulario-alta";
 
 export const metadata: Metadata = { title: "Nuevo cliente" };
 
-export default function PaginaNuevoCliente() {
+export default async function PaginaNuevoCliente() {
+  const { perfil } = await requireBarbero();
   return (
     <div className="mx-auto max-w-lg">
       <EncabezadoPagina
@@ -24,7 +26,7 @@ export default function PaginaNuevoCliente() {
           </Link>
         }
       />
-      <FormularioAlta passwordInicial={generarPassword()} />
+      <FormularioAlta passwordInicial={generarPassword()} conPrecio={perfil.es_dueno} />
     </div>
   );
 }

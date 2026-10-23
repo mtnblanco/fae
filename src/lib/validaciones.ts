@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MONTO_MAX, parsearMonto } from "./dinero";
 import { PASSWORD_MAX, PASSWORD_MIN } from "./password";
 import { esTelefonoValido, normalizarTelefono } from "./telefono";
 
@@ -60,6 +61,31 @@ export const cambiarPasswordSchema = z
     path: ["nueva"],
   });
 
+// ─── Montos ─────────────────────────────────────────────────────────────────
+const MSJ_MONTO = "Ingresá un monto válido, por ejemplo 8.000 o 8.500,50.";
+
+/** Monto ya leído (número) o null = sin monto. Para las acciones de botones. */
+export const montoSchema = z
+  .number({ error: MSJ_MONTO })
+  .min(0, { error: MSJ_MONTO })
+  .max(MONTO_MAX, { error: MSJ_MONTO })
+  .nullable();
+
+/** Monto escrito en un campo de texto ("8.000", "8500,50"). Vacío = sin monto. */
+export const montoTextoSchema = z.string().transform((texto, ctx) => {
+  const leido = parsearMonto(texto);
+  if (!leido.ok) {
+    ctx.addIssue({ code: "custom", message: MSJ_MONTO });
+    return z.NEVER;
+  }
+  return leido.monto;
+});
+
+export const precioClienteSchema = z.object({
+  id: idSchema,
+  precio: montoTextoSchema,
+});
+
 // ─── Clientes ───────────────────────────────────────────────────────────────
 export const clienteSchema = z.object({
   nombre: nombreSchema,
@@ -68,6 +94,8 @@ export const clienteSchema = z.object({
 
 export const altaClienteSchema = clienteSchema.extend({
   password: passwordSchema,
+  /** Solo lo carga el dueño; si no viene, el cliente queda sin precio. */
+  precio: montoTextoSchema.optional(),
 });
 
 export const editarClienteSchema = clienteSchema.extend({

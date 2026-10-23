@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
+import { esRutaSoloDueno } from "@/lib/permisos";
 import { destinoSegunPerfil, RUTAS } from "@/lib/rutas";
 import { SUPABASE_KEY, SUPABASE_URL, supabaseConfigurado } from "./env";
 
@@ -9,7 +10,7 @@ const empiezaCon = (path: string, base: string) => path === base || path.startsW
 /**
  * Refresca la sesión de Supabase (cookies) y aplica los chequeos optimistas
  * de acceso. La verificación definitiva se repite en el servidor
- * (`requireBarbero` / `requireCliente`) y en la base (RLS).
+ * (`requireBarbero` / `requireDueno` / `requireCliente`) y en la base (RLS).
  */
 export async function actualizarSesion(request: NextRequest) {
   let respuesta = NextResponse.next({ request });
@@ -55,7 +56,7 @@ export async function actualizarSesion(request: NextRequest) {
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("rol, debe_cambiar_password")
+    .select("rol, debe_cambiar_password, es_dueno")
     .eq("id", userId)
     .maybeSingle();
 
@@ -65,6 +66,7 @@ export async function actualizarSesion(request: NextRequest) {
   if (perfil.debe_cambiar_password && !enCambio) return redirigir(RUTAS.cambiarPassword);
   if (enLogin) return redirigir(destinoSegunPerfil(perfil));
   if (enPanel && perfil.rol !== "barbero") return redirigir(RUTAS.carnet);
+  if (enPanel && !perfil.es_dueno && esRutaSoloDueno(path)) return redirigir(RUTAS.panel);
   if (enCarnet && perfil.rol !== "cliente") return redirigir(RUTAS.panel);
 
   return respuesta;

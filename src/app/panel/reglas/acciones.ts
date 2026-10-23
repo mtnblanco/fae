@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireBarbero } from "@/lib/auth";
+import { requireDueno } from "@/lib/auth";
 import { mensajeDeErrorDb } from "@/lib/errores";
 import { type EstadoFormulario, texto } from "@/lib/formularios";
 import { RUTAS } from "@/lib/rutas";
@@ -12,7 +12,7 @@ export async function guardarRegla(
   _previo: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
-  await requireBarbero();
+  await requireDueno();
   const valores = {
     cortes_necesarios: texto(formData, "cortes_necesarios"),
     descripcion_premio: texto(formData, "descripcion_premio"),

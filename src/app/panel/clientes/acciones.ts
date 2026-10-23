@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireBarbero } from "@/lib/auth";
+import { requireBarbero, requireDueno } from "@/lib/auth";
 import { clienteParaEscaneo } from "@/lib/datos/panel";
+import { aNumero, formatearPesos } from "@/lib/dinero";
 import { ERROR_GENERICO, esDuplicado, mensajeDeErrorDb } from "@/lib/errores";
 import { type EstadoFormulario, texto } from "@/lib/formularios";
 import { exito, fallo, type Resultado } from "@/lib/resultado";
@@ -16,6 +17,8 @@ import {
   editarClienteSchema,
   erroresDeCampo,
   idSchema,
+  montoSchema,
+  precioClienteSchema,
   resetPasswordSchema,
 } from "@/lib/validaciones";
 
@@ -42,12 +45,18 @@ export async function crearCliente(
   _previo: EstadoFormulario<Credenciales>,
   formData: FormData,
 ): Promise<EstadoFormulario<Credenciales>> {
-  await requireBarbero();
-  const valores = { nombre: texto(formData, "nombre"), telefono: texto(formData, "telefono") };
+  const { perfil } = await requireBarbero();
+  const valores = {
+    nombre: texto(formData, "nombre"),
+    telefono: texto(formData, "telefono"),
+    // El precio lo carga solo el dueño; si lo manda el empleado, se ignora.
+    ...(perfil.es_dueno ? { precio: texto(formData, "precio") } : {}),
+  };
   const parse = altaClienteSchema.safeParse({ ...valores, password: texto(formData, "password") });
   if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error), valores };
 
   const { nombre, telefono, password } = parse.data;
+  const precio = perfil.es_dueno ? (parse.data.precio ?? null) : null;
   const admin = createAdminClient();
 
   const { data: creado, error } = await admin.auth.admin.createUser({
@@ -67,6 +76,7 @@ export async function crearCliente(
     telefono,
     rol: "cliente",
     debe_cambiar_password: true,
+    precio_habitual: precio,
   });
   if (errorPerfil) {
     // Compensación: sin perfil, el usuario de Auth no sirve. Lo borramos.
@@ -133,6 +143,33 @@ export async function editarCliente(
   };
 }
 
+// ─── Precio habitual (solo el dueño; la base vuelve a verificarlo) ──────────
+export async function guardarPrecio(
+  _previo: EstadoFormulario,
+  formData: FormData,
+): Promise<EstadoFormulario> {
+  await requireDueno();
+  const valores = { precio: texto(formData, "precio") };
+  const parse = precioClienteSchema.safeParse({ ...valores, id: texto(formData, "id") });
+  if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error), valores };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("guardar_precio_cliente", {
+    p_cliente_id: parse.data.id,
+    p_precio: parse.data.precio,
+  });
+  if (error) return { estado: "error", mensaje: mensajeDeErrorDb(error), valores };
+
+  revalidarPanel();
+  return {
+    estado: "ok",
+    mensaje:
+      parse.data.precio === null
+        ? "Precio borrado."
+        : `Precio guardado: ${formatearPesos(parse.data.precio)}.`,
+  };
+}
+
 // ─── Reseteo de contraseña ──────────────────────────────────────────────────
 export async function resetearPassword(
   _previo: EstadoFormulario<Credenciales>,
@@ -168,7 +205,7 @@ export async function resetearPassword(
 
 // ─── Baja ───────────────────────────────────────────────────────────────────
 export async function eliminarCliente(id: string): Promise<Resultado> {
-  await requireBarbero();
+  await requireDueno();
   if (!idSchema.safeParse(id).success) return fallo("Cliente inválido.");
   const admin = createAdminClient();
   if (!(await buscarCliente(admin, id))) return fallo("No encontramos a ese cliente.");
@@ -184,23 +221,33 @@ export async function eliminarCliente(id: string): Promise<Resultado> {
 // ─── Cortes y premios (con la sesión del barbero: valida la base) ───────────
 export type EstadoCliente = NonNullable<Awaited<ReturnType<typeof clienteParaEscaneo>>>;
 
+/** Suma un corte con lo que pagó el cliente (`monto` null = sin monto). */
 export async function sumarCorte(
   clienteId: string,
   solicitudId: string,
-): Promise<Resultado<{ corteId: string; cliente: EstadoCliente | null }>> {
+  monto: number | null,
+): Promise<Resultado<{ corteId: string; monto: number | null; cliente: EstadoCliente | null }>> {
   await requireBarbero();
   if (!idSchema.safeParse(clienteId).success || !idSchema.safeParse(solicitudId).success) {
     return fallo("Solicitud inválida.");
   }
+  const montoValido = montoSchema.safeParse(monto);
+  if (!montoValido.success) return fallo(mensajeDeErrorDb({ message: "monto_invalido" }));
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("registrar_corte", {
     p_cliente_id: clienteId,
     p_solicitud_id: solicitudId,
+    p_monto: montoValido.data,
   });
   if (error || !data) return fallo(mensajeDeErrorDb(error));
 
   revalidarPanel();
-  return exito({ corteId: data.id, cliente: await clienteParaEscaneo(clienteId) });
+  return exito({
+    corteId: data.id,
+    monto: aNumero(data.monto),
+    cliente: await clienteParaEscaneo(clienteId),
+  });
 }
 
 export async function deshacerCorte(corteId: string): Promise<Resultado> {

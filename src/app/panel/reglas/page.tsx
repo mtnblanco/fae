@@ -3,10 +3,12 @@ import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { FormularioRegla } from "@/components/panel/formulario-regla";
 import { obtenerReglas } from "@/lib/datos/panel";
 import { formatearFechaCorta } from "@/lib/fechas";
+import { requireDueno } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Premios" };
 
 export default async function PaginaReglas() {
+  await requireDueno();
   const { activa, historial } = await obtenerReglas();
 
   return (

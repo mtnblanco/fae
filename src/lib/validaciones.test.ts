@@ -4,6 +4,8 @@ import {
   cambiarPasswordSchema,
   descuentoSchema,
   loginSchema,
+  montoSchema,
+  precioClienteSchema,
   reglaSchema,
 } from "./validaciones";
 
@@ -99,5 +101,31 @@ describe("reglaSchema", () => {
       reglaSchema.safeParse({ cortes_necesarios: "2.5", descripcion_premio: "Corte gratis" })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("montos y precios", () => {
+  const id = "c0000000-0000-4000-8000-000000000001";
+
+  it("montoSchema acepta null (sin monto) y montos dentro del rango", () => {
+    expect(montoSchema.parse(null)).toBeNull();
+    expect(montoSchema.parse(8000)).toBe(8000);
+    expect(montoSchema.safeParse(-1).success).toBe(false);
+    expect(montoSchema.safeParse(10_000_000).success).toBe(false);
+    expect(montoSchema.safeParse(Number.NaN).success).toBe(false);
+  });
+
+  it("precioClienteSchema lee el precio como se escribe en Argentina", () => {
+    expect(precioClienteSchema.parse({ id, precio: "8.500" }).precio).toBe(8500);
+    expect(precioClienteSchema.parse({ id, precio: "8.500,50" }).precio).toBe(8500.5);
+    expect(precioClienteSchema.parse({ id, precio: "" }).precio).toBeNull();
+    expect(precioClienteSchema.safeParse({ id, precio: "ocho mil" }).success).toBe(false);
+  });
+
+  it("el alta acepta un precio opcional", () => {
+    const base = { nombre: "Juan Pérez", telefono: "2346401122", password: "abc12345" };
+    expect(altaClienteSchema.parse(base).precio).toBeUndefined();
+    expect(altaClienteSchema.parse({ ...base, precio: "9.000" }).precio).toBe(9000);
+    expect(altaClienteSchema.safeParse({ ...base, precio: "x" }).success).toBe(false);
   });
 });

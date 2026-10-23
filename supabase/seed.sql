@@ -2,11 +2,15 @@
 -- Datos de ejemplo para PROBAR la app. ⚠️ NO correr en producción.
 --
 -- Crea:
---   · 1 barbero:   email barbero@faebarbershop.test   / contraseña barbero123
+--   · 1 barbero dueño:    email barbero@faebarbershop.test  / contraseña barbero123
+--   · 1 barbero empleado: email empleado@faebarbershop.test / contraseña empleado123
 --   · 12 clientes: teléfono (ver tabla abajo)     / contraseña cliente123
 --   · 1 cliente nuevo que debe cambiar la contraseña:
 --                  teléfono 2346409999            / contraseña nuevo1234
 --   · Cortes y canjes repartidos en los últimos meses, y descuentos asociados.
+--   · Precio habitual en casi todos los clientes. Los cortes de los últimos
+--     ~2 meses tienen monto (algunos los cargó el empleado); los más viejos,
+--     no (como los cortes cargados antes de que existiera el monto).
 --
 -- Los emails internos de los clientes usan el dominio por defecto
 -- (clientes.local). Si cambiaste CLIENTES_EMAIL_DOMAIN, cambialo acá también.
@@ -41,11 +45,14 @@ begin
 end;
 $$;
 
--- ─── Barbero ────────────────────────────────────────────────────────────────
+-- ─── Barberos ───────────────────────────────────────────────────────────────
 select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000001', 'barbero@faebarbershop.test', 'barbero123');
+select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000002', 'empleado@faebarbershop.test', 'empleado123');
 
-insert into public.perfiles (id, nombre, telefono, rol, debe_cambiar_password, created_at)
-values ('b0000000-0000-4000-8000-000000000001', 'Leandro Ferreyra', null, 'barbero', false, now() - interval '200 days')
+insert into public.perfiles (id, nombre, telefono, rol, debe_cambiar_password, created_at, es_dueno)
+values
+  ('b0000000-0000-4000-8000-000000000001', 'Leandro Ferreyra', null, 'barbero', false, now() - interval '200 days', true),
+  ('b0000000-0000-4000-8000-000000000002', 'Nahuel Castro',    null, 'barbero', false, now() - interval '60 days',  false)
 on conflict (id) do nothing;
 
 -- ─── Clientes ───────────────────────────────────────────────────────────────
@@ -97,6 +104,33 @@ select
 from seed_clientes c
 cross join lateral generate_series(1, c.cortes) as g
 where not exists (select 1 from public.cortes where cliente_id = c.id);
+
+-- Precio habitual: entre $ 8.000 y $ 10.000 (Agustín y Bruno, sin precio todavía).
+update public.perfiles p
+set precio_habitual = 8000 + (abs(hashtext(p.id::text)) % 5) * 500
+from seed_clientes c
+where p.id = c.id
+  and c.cortes > 0
+  and p.precio_habitual is null;
+
+-- Monto en los cortes de los últimos 60 días; los más viejos quedan "sin monto".
+update public.cortes co
+set monto = p.precio_habitual
+from public.perfiles p
+where p.id = co.cliente_id
+  and co.monto is null
+  and co.fecha > now() - interval '60 days';
+
+-- El empleado cargó los cortes de los últimos 30 días de algunos clientes.
+update public.cortes
+set registrado_por = 'b0000000-0000-4000-8000-000000000002'
+where cliente_id in (
+    'c0000000-0000-4000-8000-000000000003',
+    'c0000000-0000-4000-8000-000000000005',
+    'c0000000-0000-4000-8000-000000000007',
+    'c0000000-0000-4000-8000-000000000011'
+  )
+  and fecha > now() - interval '30 days';
 
 -- Canjes: después del corte que completó cada premio.
 insert into public.canjes (cliente_id, fecha, registrado_por, premio_descripcion)

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireBarbero } from "@/lib/auth";
+import { requireDueno } from "@/lib/auth";
 import { ERROR_GENERICO } from "@/lib/errores";
 import { type EstadoFormulario, texto } from "@/lib/formularios";
 import { exito, fallo, type Resultado } from "@/lib/resultado";
@@ -20,7 +20,7 @@ export async function guardarDescuento(
   _previo: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
-  await requireBarbero();
+  await requireDueno();
   const valores = {
     comercio: texto(formData, "comercio"),
     descripcion: texto(formData, "descripcion"),
@@ -47,7 +47,7 @@ export async function guardarDescuento(
 }
 
 export async function cambiarActivoDescuento(id: string, activo: boolean): Promise<Resultado> {
-  await requireBarbero();
+  await requireDueno();
   if (!idSchema.safeParse(id).success) return fallo("Descuento inválido.");
   const supabase = await createClient();
   const { error } = await supabase.from("descuentos_asociados").update({ activo }).eq("id", id);
@@ -57,7 +57,7 @@ export async function cambiarActivoDescuento(id: string, activo: boolean): Promi
 }
 
 export async function eliminarDescuento(id: string): Promise<Resultado> {
-  await requireBarbero();
+  await requireDueno();
   if (!idSchema.safeParse(id).success) return fallo("Descuento inválido.");
   const supabase = await createClient();
   const { error } = await supabase.from("descuentos_asociados").delete().eq("id", id);

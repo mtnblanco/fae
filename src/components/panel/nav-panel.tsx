@@ -1,6 +1,14 @@
 "use client";
 
-import { BadgePercent, House, ScanLine, Settings2, Users, type LucideIcon } from "lucide-react";
+import {
+  BadgePercent,
+  House,
+  ScanLine,
+  Settings2,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RUTAS } from "@/lib/rutas";
@@ -8,13 +16,23 @@ import { cn } from "@/lib/utils";
 
 type Item = { href: string; etiqueta: string; icono: LucideIcon; exacto?: boolean };
 
-const ITEMS: Item[] = [
-  { href: RUTAS.panel, etiqueta: "Inicio", icono: House, exacto: true },
-  { href: RUTAS.clientes, etiqueta: "Clientes", icono: Users },
-  { href: RUTAS.escanear, etiqueta: "Escanear", icono: ScanLine },
-  { href: RUTAS.descuentos, etiqueta: "Descuentos", icono: BadgePercent },
-  { href: RUTAS.reglas, etiqueta: "Premios", icono: Settings2 },
-];
+const INICIO: Item = { href: RUTAS.panel, etiqueta: "Inicio", icono: House, exacto: true };
+const CLIENTES: Item = { href: RUTAS.clientes, etiqueta: "Clientes", icono: Users };
+const ESCANEAR: Item = { href: RUTAS.escanear, etiqueta: "Escanear", icono: ScanLine };
+const CAJA: Item = { href: RUTAS.caja, etiqueta: "Caja", icono: Wallet };
+const DESCUENTOS: Item = { href: RUTAS.descuentos, etiqueta: "Descuentos", icono: BadgePercent };
+const PREMIOS: Item = { href: RUTAS.reglas, etiqueta: "Premios", icono: Settings2 };
+
+/** El empleado no ve la caja ni la configuración. */
+const itemsLateral = (esDueno: boolean) =>
+  esDueno ? [INICIO, CLIENTES, ESCANEAR, CAJA, DESCUENTOS, PREMIOS] : [INICIO, CLIENTES, ESCANEAR];
+
+/**
+ * Barra inferior: hasta 5 lugares, con "Escanear" al centro. Para el dueño, la
+ * caja ocupa el lugar de "Descuentos" (que sigue en el menú lateral y en Inicio).
+ */
+const itemsInferior = (esDueno: boolean) =>
+  esDueno ? [INICIO, CLIENTES, ESCANEAR, CAJA, PREMIOS] : [INICIO, ESCANEAR, CLIENTES];
 
 function useActivo() {
   const path = usePathname();
@@ -23,11 +41,11 @@ function useActivo() {
 }
 
 /** Navegación lateral (desktop). */
-export function NavLateral() {
+export function NavLateral({ esDueno }: { esDueno: boolean }) {
   const activo = useActivo();
   return (
     <nav aria-label="Secciones del panel" className="grid grid-cols-1 gap-1">
-      {ITEMS.map((item) => {
+      {itemsLateral(esDueno).map((item) => {
         const Icono = item.icono;
         const esActivo = activo(item);
         return (
@@ -52,16 +70,22 @@ export function NavLateral() {
 }
 
 /** Barra inferior (mobile), con "Escanear" destacado al centro. */
-export function NavInferior() {
+export function NavInferior({ esDueno }: { esDueno: boolean }) {
   const activo = useActivo();
+  const items = itemsInferior(esDueno);
   return (
     <nav
       aria-label="Secciones del panel"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-cuero bg-espresso/95 backdrop-blur-md lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="mx-auto grid h-(--alto-nav-inferior) max-w-md grid-cols-5">
-        {ITEMS.map((item) => {
+      <ul
+        className={cn(
+          "mx-auto grid h-(--alto-nav-inferior) max-w-md",
+          items.length === 5 ? "grid-cols-5" : "grid-cols-3",
+        )}
+      >
+        {items.map((item) => {
           const Icono = item.icono;
           const esActivo = activo(item);
           const central = item.href === RUTAS.escanear;

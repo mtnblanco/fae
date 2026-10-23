@@ -10,6 +10,7 @@ export const RUTAS = {
   escanear: "/panel/escanear",
   descuentos: "/panel/descuentos",
   reglas: "/panel/reglas",
+  caja: "/panel/caja",
 } as const;
 
 export const rutaCliente = (id: string) => `${RUTAS.clientes}/${id}`;

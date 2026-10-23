@@ -32,6 +32,8 @@ export type Database = {
           debe_cambiar_password: boolean;
           created_at: string;
           busqueda: string;
+          es_dueno: boolean;
+          precio_habitual: number | null;
         };
         Insert: {
           id: string;
@@ -40,6 +42,8 @@ export type Database = {
           rol?: Rol;
           debe_cambiar_password?: boolean;
           created_at?: string;
+          es_dueno?: boolean;
+          precio_habitual?: number | null;
         };
         Update: {
           id?: string;
@@ -48,6 +52,8 @@ export type Database = {
           rol?: Rol;
           debe_cambiar_password?: boolean;
           created_at?: string;
+          es_dueno?: boolean;
+          precio_habitual?: number | null;
         };
         Relationships: [];
       };
@@ -58,6 +64,7 @@ export type Database = {
           fecha: string;
           registrado_por: string | null;
           solicitud_id: string | null;
+          monto: number | null;
         };
         Insert: {
           id?: string;
@@ -65,6 +72,7 @@ export type Database = {
           fecha?: string;
           registrado_por?: string | null;
           solicitud_id?: string | null;
+          monto?: number | null;
         };
         Update: {
           id?: string;
@@ -72,6 +80,7 @@ export type Database = {
           fecha?: string;
           registrado_por?: string | null;
           solicitud_id?: string | null;
+          monto?: number | null;
         };
         Relationships: [
           Relacion<"cortes_cliente_id_fkey", "cliente_id", "perfiles">,
@@ -179,15 +188,17 @@ export type Database = {
           descripcion_premio: string | null;
           sellos_actuales: number;
           premios_disponibles: number;
+          precio_habitual: number | null;
         };
         Relationships: [];
       };
     };
     Functions: {
       es_barbero: { Args: never; Returns: boolean };
+      es_dueno: { Args: never; Returns: boolean };
       hoy_ar: { Args: never; Returns: string };
       registrar_corte: {
-        Args: { p_cliente_id: string; p_solicitud_id?: string };
+        Args: { p_cliente_id: string; p_solicitud_id?: string; p_monto?: number | null };
         Returns: Database["public"]["Tables"]["cortes"]["Row"];
       };
       deshacer_corte: { Args: { p_corte_id: string }; Returns: undefined };
@@ -198,6 +209,21 @@ export type Database = {
       guardar_regla: {
         Args: { p_cortes_necesarios: number; p_descripcion_premio: string };
         Returns: Database["public"]["Tables"]["reglas"]["Row"];
+      };
+      guardar_precio_cliente: {
+        Args: { p_cliente_id: string; p_precio: number | null };
+        Returns: number | null;
+      };
+      facturacion: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: {
+          barbero_id: string | null;
+          barbero_nombre: string | null;
+          es_dueno: boolean;
+          cortes: number;
+          cortes_sin_monto: number;
+          total: number;
+        }[];
       };
       metricas_panel: {
         Args: never;
@@ -228,3 +254,4 @@ export type Regla = Tabla<"reglas">;
 export type Descuento = Tabla<"descuentos_asociados">;
 export type ResumenCliente = Vista<"resumen_clientes">;
 export type Metricas = Public["Functions"]["metricas_panel"]["Returns"][number];
+export type FilaFacturacion = Public["Functions"]["facturacion"]["Returns"][number];

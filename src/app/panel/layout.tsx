@@ -23,10 +23,13 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
       <aside className="sticky top-0 hidden h-dvh flex-col self-start border-r border-cuero bg-nogal/60 px-4 py-6 lg:flex">
         <Logo href={RUTAS.panel} tamano="sm" className="px-2" />
         <div className="mt-8 flex-1">
-          <NavLateral />
+          <NavLateral esDueno={perfil.es_dueno} />
         </div>
         <div className="border-t border-cuero pt-4">
           <p className="truncate px-3 text-sm text-marfil">{perfil.nombre}</p>
+          <p className="px-3 text-[0.8125rem] text-arena">
+            {perfil.es_dueno ? "Dueño" : "Barbero"}
+          </p>
           <Link
             href={RUTAS.cambiarPassword}
             className="mt-1 block rounded-md px-3 py-1 text-[0.8125rem] text-arena transition-colors hover:text-marfil"
@@ -59,7 +62,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
         </main>
       </div>
 
-      <NavInferior />
+      <NavInferior esDueno={perfil.es_dueno} />
     </div>
   );
 }

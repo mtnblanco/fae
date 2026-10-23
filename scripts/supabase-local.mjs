@@ -30,11 +30,12 @@ const SECRETO_JWT = randomBytes(32);
 const DURACION_TOKEN = 3600;
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..", "supabase");
-// Como PostgREST: fechas y timestamps viajan como texto, no como objetos Date.
+// Como PostgREST: fechas y timestamps viajan como texto, no como objetos Date,
+// y los numeric (montos) como número.
 const comoTexto = (v) => v;
 const db = new PGlite({
   extensions: { pg_trgm, pgcrypto },
-  parsers: { 1082: comoTexto, 1114: comoTexto, 1184: comoTexto },
+  parsers: { 1082: comoTexto, 1114: comoTexto, 1184: comoTexto, 1700: Number },
 });
 await db.exec(readFileSync(join(raiz, "tests/supabase-stubs.sql"), "utf8"));
 for (const f of readdirSync(join(raiz, "migrations")).sort()) {
@@ -557,6 +558,7 @@ createServer(async (req, res) => {
   }
 }).listen(PUERTO, "127.0.0.1", () => {
   console.log(`\n  Supabase local en http://127.0.0.1:${PUERTO}`);
-  console.log("  Barbero: barbero@faebarbershop.test / barbero123");
+  console.log("  Dueño:    barbero@faebarbershop.test / barbero123");
+  console.log("  Empleado: empleado@faebarbershop.test / empleado123");
   console.log("  Cliente: 2346401122 / cliente123  ·  Primer ingreso: 2346409999 / nuevo1234\n");
 });

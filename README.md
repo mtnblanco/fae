@@ -2,7 +2,8 @@
 
 Web de fidelización para una barbería. Cada cliente tiene un **carnet digital** en el celular con un código QR y sellos: el barbero escanea el QR en cada corte, se estampa un sello y, al completar la tarjeta, el cliente gana un premio. Además, el carnet muestra descuentos en comercios amigos.
 
-- **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR), canjea premios, configura la regla de premios y administra los descuentos asociados.
+- **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR) anotando cuánto pagó cada cliente, y canjea premios.
+- Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él.
 - **El cliente** entra con su teléfono y una contraseña, y ve su carnet, sus premios, los descuentos y su historial.
 
 Todo funciona dentro de los planes gratuitos de **Supabase** (base de datos y usuarios) y **Vercel** (hosting). No se envían mails: el barbero le pasa los datos de acceso al cliente en persona o por WhatsApp.
@@ -23,6 +24,7 @@ Todo funciona dentro de los planes gratuitos de **Supabase** (base de datos y us
 10. [Instalar el carnet en el celular](#10-instalar-el-carnet-en-el-celular)
 11. [Para desarrolladores](#11-para-desarrolladores)
 12. [Problemas frecuentes](#12-problemas-frecuentes)
+13. [Actualizar una instalación que ya está funcionando](#13-actualizar-una-instalación-que-ya-está-funcionando)
 
 ---
 
@@ -66,6 +68,7 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
 3. Repetí lo mismo, **en este orden**, con:
    - [`supabase/migrations/20261010000200_funciones.sql`](supabase/migrations/20261010000200_funciones.sql)
    - [`supabase/migrations/20261010000300_seguridad.sql`](supabase/migrations/20261010000300_seguridad.sql)
+   - [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -99,15 +102,42 @@ Los clientes entran con teléfono y contraseña. Por dentro, Supabase usa un ema
 
 ## 5. Crear el primer barbero
 
-El barbero (el administrador) se crea a mano una sola vez:
+El primer barbero es **el dueño** (el administrador) y se crea a mano una sola vez:
 
 1. En Supabase, andá a **Authentication → Users → Add user → Create new user**.
 2. Poné **tu email real** y una **contraseña** (de al menos 6 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
 3. Abrí **SQL Editor → New query** y pegá el contenido de [`supabase/crear-barbero.sql`](supabase/crear-barbero.sql).
 4. Cambiá los dos valores marcados con 👉: **tu nombre** y **el email** que usaste en el paso 2.
-5. Tocá **Run**. Al final tiene que aparecer una fila con `rol = barbero`.
+5. Tocá **Run**. Al final tiene que aparecer una fila con `rol = barbero` y `es_dueno = true`.
 
 Para entrar al panel: en la pantalla de ingreso tocá **"¿Sos el barbero? Entrá con tu email"**.
+
+### 5.1 Sumar un barbero empleado
+
+Cada barbero entra con su propio email y contraseña, así la app sabe quién hizo cada corte.
+
+1. En Supabase, andá a **Authentication → Users → Add user → Create new user**.
+2. Poné **el email del empleado** y una **contraseña** (de al menos 6 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
+3. Abrí **SQL Editor → New query** y pegá el contenido de [`supabase/crear-empleado.sql`](supabase/crear-empleado.sql) (ojo: **no** el de `crear-barbero.sql`, que crea un dueño).
+4. Cambiá los dos valores marcados con 👉: **el nombre del empleado** (así va a aparecer en cada corte que cargue) y **el email** del paso 2.
+5. Tocá **Run**. Al final tienen que aparecer dos filas: vos con `es_dueno = true` y el empleado con `es_dueno = false`.
+6. Pasale al empleado su email y su contraseña. Entra igual que vos: **"¿Sos el barbero? Entrá con tu email"**. Si quiere, después la cambia desde **Cambiar contraseña** (arriba, en su nombre).
+
+Qué puede hacer cada uno:
+
+|                                                                       | Dueño      | Empleado                  |
+| --------------------------------------------------------------------- | ---------- | ------------------------- |
+| Buscar y escanear clientes, darlos de alta                            | ✅         | ✅                        |
+| Sumar cortes (con el precio del cliente precargado) y canjear premios | ✅         | ✅                        |
+| Deshacer un corte (dentro de los 10 minutos)                          | Cualquiera | Solo los suyos            |
+| Ver el historial de cortes con montos                                 | De todos   | Solo los suyos            |
+| Caja: totales por barbero y por período                               | ✅         | ❌                        |
+| Editar el precio habitual de un cliente                               | ✅         | ❌ (lo ve, para cobrarlo) |
+| Regla de premios, descuentos, borrar clientes                         | ✅         | ❌                        |
+
+### 5.2 Si el empleado deja de trabajar
+
+No lo borres (sus cortes quedarían "sin barbero"). Bloquealo: abrí **SQL Editor → New query**, pegá [`supabase/quitar-empleado.sql`](supabase/quitar-empleado.sql), cambiá el email marcado con 👉 y tocá **Run**. Sus cortes siguen en la caja con su nombre, pero ya no puede entrar.
 
 ---
 
@@ -157,7 +187,9 @@ Hacé este recorrido completo una vez (con tu celular y otro dispositivo, o con 
 ## 9. Personalizar la barbería
 
 - **Nombre, slogan, ciudad, sedes, horarios, Instagram y WhatsApp de turnos:** en [`src/config/site.ts`](src/config/site.ts). Los campos vacíos no se muestran.
-- **Regla de premios** (cada cuántos cortes y qué premio): desde el panel, en **Premios**. Arranca en "cada 5 cortes, 50% off en el siguiente corte".
+- **Regla de premios** (cada cuántos cortes y qué premio): desde el panel, en **Premios** (solo el dueño). Arranca en "cada 5 cortes, 50% off en el siguiente corte".
+- **Precio de cada cliente:** en su ficha, tocá **Precio** (solo el dueño). Se precarga cada vez que se le suma un corte; en ese momento se puede cambiar (por ejemplo, si ese día pagó otra cosa). También se puede cargar al darlo de alta.
+- **Caja:** en el panel, **Caja** (solo el dueño). Muestra lo cobrado por cada barbero hoy, esta semana, este mes, el mes anterior o en el año, y la lista de cortes con su monto.
 - **Descuentos asociados:** desde el panel, en **Descuentos**.
 - **Colores, tipografías y sombras:** todos los tokens están definidos una sola vez en [`src/app/globals.css`](src/app/globals.css).
 
@@ -209,11 +241,12 @@ npm run dev               # en otra
 
 Usuarios de ejemplo (del seed):
 
-| Rol                          | Usuario                                                | Contraseña   |
-| ---------------------------- | ------------------------------------------------------ | ------------ |
-| Barbero                      | `barbero@faebarbershop.test` (tocá "¿Sos el barbero?") | `barbero123` |
-| Cliente                      | `2346401122`                                           | `cliente123` |
-| Cliente en su primer ingreso | `2346409999`                                           | `nuevo1234`  |
+| Rol                          | Usuario                                                 | Contraseña    |
+| ---------------------------- | ------------------------------------------------------- | ------------- |
+| Barbero dueño                | `barbero@faebarbershop.test` (tocá "¿Sos el barbero?")  | `barbero123`  |
+| Barbero empleado             | `empleado@faebarbershop.test` (tocá "¿Sos el barbero?") | `empleado123` |
+| Cliente                      | `2346401122`                                            | `cliente123`  |
+| Cliente en su primer ingreso | `2346409999`                                            | `nuevo1234`   |
 
 ### Scripts
 
@@ -255,7 +288,9 @@ src/
 supabase/
   migrations/           Tablas, funciones, vista, RLS
   seed.sql              Datos de ejemplo
-  crear-barbero.sql     Alta del primer barbero
+  crear-barbero.sql     Alta del barbero dueño
+  crear-empleado.sql    Alta de un barbero empleado
+  quitar-empleado.sql   Bloquear a un empleado que ya no trabaja
   tests/                Tests de base de datos (PGlite)
 scripts/                Emulador local y copia del lector de QR
 ```
@@ -263,11 +298,12 @@ scripts/                Emulador local y copia del lector de QR
 ### Seguridad (resumen)
 
 - **RLS activado en todas las tablas** y permisos mínimos por rol (`anon`, `authenticated`). Un cliente solo puede **leer** sus propios datos, la regla activa y los descuentos vigentes. No puede escribir nada.
-- El rol se chequea con `es_barbero()` (`security definer`, `search_path` fijo).
+- El rol se chequea con `es_barbero()` y `es_dueno()` (`security definer`, `search_path` fijo).
+- **Dueño y empleado:** el RLS de `cortes` deja que el empleado lea solo los cortes que cargó él (con su monto); la tarjeta de sellos igual cuenta todos, con una función que devuelve solo cantidades. `facturacion()`, `guardar_precio_cliente()` y `guardar_regla()` exigen ser dueño; `deshacer_corte()` deja al empleado deshacer solo los suyos; escribir descuentos también es solo del dueño. Además, `proxy.ts` y los guards (`requireDueno`) lo sacan de las secciones del dueño, y las Server Actions lo vuelven a verificar.
 - Cortes, canjes y reglas se escriben **solo** mediante funciones SQL que validan las reglas de negocio de forma atómica: el canje bloquea la fila del cliente y recalcula los premios disponibles; cada acción lleva una clave de idempotencia, así un doble toque no duplica nada.
 - Crear, editar, resetear y eliminar usuarios se hace solo en el servidor con la clave secreta, siempre después de verificar que quien llama es el barbero. La clave nunca llega al navegador (`server-only`).
 - `proxy.ts` redirige según el rol, y además cada página y cada acción vuelve a verificar la sesión en el servidor.
-- Los tests (`npm run test:db`) prueban que un cliente no puede leer datos de otro, ni escribir, ni sumarse cortes, ni canjear premios.
+- Los tests (`npm run test:db`) prueban que un cliente no puede leer datos de otro, ni escribir, ni sumarse cortes, ni canjear premios; que el empleado no ve montos ni cortes del otro barbero ni puede usar las funciones del dueño; y que la migración nueva funciona sobre una base con datos.
 
 Las decisiones de diseño están en [`DECISIONES.md`](DECISIONES.md) y el plan de trabajo en [`PLAN.md`](PLAN.md).
 
@@ -300,3 +336,40 @@ Buscalo en **Clientes** → **Resetear contraseña** → pasale la temporal por 
 
 **El proyecto de Supabase aparece "pausado".**
 En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso**. Con el uso diario de la barbería no pasa; si ocurre, entrá al dashboard de Supabase y tocá **Restore project**.
+
+---
+
+## 13. Actualizar una instalación que ya está funcionando
+
+Cuando el código trae una **migración nueva** (un archivo nuevo en `supabase/migrations/`), hay que aplicarla en Supabase **antes** de publicar el código nuevo. La migración nueva funciona con la versión anterior de la app, pero la app nueva necesita la migración.
+
+### Dueño y empleado, precios y montos (`20261022000100_barberos_y_precios.sql`)
+
+Qué hace: agrega el precio habitual de cada cliente, el monto de cada corte, y separa al barbero **dueño** del **empleado**. No borra ni cambia datos: los cortes de antes quedan como "Sin monto" y siguen contando para los sellos, y **el barbero que ya existe pasa a ser el dueño**.
+
+1. **(Recomendado) Hacé un respaldo.** En Supabase, **Database → Backups**: fijate que haya un respaldo de hoy (el plan gratuito hace uno por día). Si querés uno al momento, podés exportar las tablas desde **Table Editor → (tabla) → Export → CSV**.
+2. Abrí **SQL Editor → New query**, pegá **todo** el contenido de [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez** (si lo corrés de nuevo, da error porque las columnas ya existen; no rompe nada).
+3. Verificá que quedaste como dueño: en una consulta nueva pegá y corré
+
+   ```sql
+   select nombre, rol, es_dueno from perfiles where rol = 'barbero';
+   ```
+
+   Tiene que aparecer tu nombre con `es_dueno = true`.
+
+4. **Publicá el código nuevo:** subí los cambios a GitHub (o hacé el merge a `main`). Vercel publica solo en un par de minutos.
+5. Entrá al panel: vas a ver **Caja** en el menú y el campo **Cobrás** al sumar un corte.
+6. Cargá el **precio habitual** de tus clientes de siempre (ficha del cliente → **Precio**). Mientras no tengan precio, el campo **Cobrás** aparece vacío y se escribe a mano.
+7. Sumá al empleado siguiendo el paso [5.1](#51-sumar-un-barbero-empleado).
+
+<details>
+<summary>Alternativa con la línea de comandos (opcional)</summary>
+
+```bash
+npx supabase link --project-ref TU_PROJECT_REF
+npx supabase db push        # aplica solo las migraciones que falten
+```
+
+Usalo **solo** si las migraciones anteriores también se aplicaron con `db push`. Si las pegaste en el SQL Editor (como dice el paso 3), `db push` no sabe que ya están e intenta crearlas de nuevo: en ese caso seguí los pasos de arriba.
+
+</details>
