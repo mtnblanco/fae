@@ -127,7 +127,7 @@ export default async function PaginaPanel() {
             </h2>
             <Link
               href={RUTAS.caja}
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-md text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
+              className="-my-2.5 inline-flex shrink-0 items-center gap-0.5 rounded-md py-2.5 text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
             >
               Ver caja
               <ChevronRight className="size-4" aria-hidden />
@@ -146,7 +146,7 @@ export default async function PaginaPanel() {
             {metricas.premios_pendientes > 0 ? (
               <Link
                 href={`${RUTAS.clientes}?filtro=con-premio`}
-                className="shrink-0 rounded-md text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
+                className="-my-2.5 shrink-0 rounded-md py-2.5 text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
               >
                 Ver todos ({metricas.premios_pendientes})
               </Link>

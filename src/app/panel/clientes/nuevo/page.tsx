@@ -19,7 +19,7 @@ export default async function PaginaNuevoCliente() {
         volver={
           <Link
             href={RUTAS.clientes}
-            className="inline-flex items-center gap-1.5 rounded-md text-sm text-arena transition-colors hover:text-marfil"
+            className="-my-2.5 inline-flex items-center gap-1.5 rounded-md py-2.5 text-sm text-arena transition-colors hover:text-marfil"
           >
             <ArrowLeft className="size-4" aria-hidden />
             Clientes

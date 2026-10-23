@@ -65,7 +65,7 @@ export default async function PaginaCliente({
       <div>
         <Link
           href={RUTAS.clientes}
-          className="mb-4 inline-flex items-center gap-1.5 rounded-md text-sm text-arena transition-colors hover:text-marfil"
+          className="-mt-2.5 mb-1.5 inline-flex items-center gap-1.5 rounded-md py-2.5 text-sm text-arena transition-colors hover:text-marfil"
         >
           <ArrowLeft className="size-4" aria-hidden />
           Clientes

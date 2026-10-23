@@ -32,7 +32,7 @@ export default async function PaginaCambiarPassword() {
         ) : (
           <Link
             href={volverA}
-            className="inline-flex items-center gap-2 rounded-md text-sm text-arena transition-colors hover:text-marfil"
+            className="-my-2.5 inline-flex items-center gap-2 rounded-md py-2.5 text-sm text-arena transition-colors hover:text-marfil"
           >
             <ArrowLeft className="size-4" aria-hidden />
             Volver sin cambiarla
