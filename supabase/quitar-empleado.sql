@@ -17,6 +17,17 @@ where p.id = u.id
   and not p.es_dueno                                    -- nunca bloquea al dueño
   and lower(u.email) = lower('empleado@ejemplo.com');   -- 👉 el email del empleado
 
+-- Turnos online: deja de ofrecerse a los clientes (se borra su horario).
+-- Los turnos que ya tenía reservados NO se borran: revisalos en la agenda
+-- (como dueño: Agenda → su nombre) y cancelalos o avisale a cada cliente.
+-- (Si todavía no aplicaste la migración de turnos, borrá estas dos líneas.)
+delete from public.horarios_semanales h using public.perfiles p, auth.users u
+where h.barbero_id = p.id and u.id = p.id and p.rol = 'barbero' and not p.es_dueno
+  and lower(u.email) = lower('empleado@ejemplo.com');   -- 👉 el mismo email de arriba
+delete from public.dias_especiales d using public.perfiles p, auth.users u
+where d.barbero_id = p.id and u.id = p.id and p.rol = 'barbero' and not p.es_dueno
+  and lower(u.email) = lower('empleado@ejemplo.com');   -- 👉 el mismo email de arriba
+
 -- Verificación: el empleado tiene que figurar con banned_until = infinity.
 select p.nombre, p.es_dueno, u.email, u.banned_until
 from public.perfiles p

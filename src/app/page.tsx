@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   AtSign,
+  CalendarClock,
   Gift,
   MapPin,
   MessageCircle,
@@ -59,9 +60,14 @@ export default async function Inicio() {
 
       <header className="contenedor flex h-16 items-center justify-between sm:h-20">
         <Logo tamano="sm" />
-        <Button asChild variant="oro" size="sm">
-          <Link href={RUTAS.login}>Ingresar</Link>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm" className="text-arena hover:text-marfil">
+            <Link href={RUTAS.turnos}>Sacá turno</Link>
+          </Button>
+          <Button asChild variant="oro" size="sm">
+            <Link href={RUTAS.login}>Ingresar</Link>
+          </Button>
+        </div>
       </header>
 
       <main id="contenido">
@@ -242,6 +248,15 @@ export default async function Inicio() {
           )}
         </div>
         <ul className="grid grid-cols-1 gap-1.5">
+          <li>
+            <Link
+              href={RUTAS.turnos}
+              className="inline-flex min-h-11 items-center gap-2 text-marfil underline-offset-4 hover:underline sm:min-h-0"
+            >
+              <CalendarClock className="size-4 shrink-0 text-oro" aria-hidden />
+              Sacá turno online
+            </Link>
+          </li>
           {sitio.whatsapp && (
             <li>
               <a
@@ -251,7 +266,7 @@ export default async function Inicio() {
                 className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:text-marfil hover:underline sm:min-h-0"
               >
                 <MessageCircle className="size-4 shrink-0 text-oro" aria-hidden />
-                Reservá tu turno por WhatsApp
+                ¿Sin cuenta? Turnos por WhatsApp
               </a>
             </li>
           )}

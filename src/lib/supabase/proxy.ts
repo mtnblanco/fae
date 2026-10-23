@@ -37,6 +37,7 @@ export async function actualizarSesion(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const enPanel = empiezaCon(path, RUTAS.panel);
   const enCarnet = empiezaCon(path, RUTAS.carnet);
+  const enTurnos = empiezaCon(path, RUTAS.turnos);
   const enCambio = path === RUTAS.cambiarPassword;
   const enLogin = path === RUTAS.login;
 
@@ -51,7 +52,7 @@ export async function actualizarSesion(request: NextRequest) {
   };
 
   if (!userId) {
-    return enPanel || enCarnet || enCambio ? redirigir(RUTAS.login) : respuesta;
+    return enPanel || enCarnet || enTurnos || enCambio ? redirigir(RUTAS.login) : respuesta;
   }
 
   const { data: perfil } = await supabase
@@ -64,10 +65,14 @@ export async function actualizarSesion(request: NextRequest) {
   if (!perfil) return enLogin ? respuesta : redirigir(RUTAS.login);
 
   if (perfil.debe_cambiar_password && !enCambio) return redirigir(RUTAS.cambiarPassword);
+  // La app instalada abre en /login?app: el barbero va directo a su agenda.
+  if (enLogin && perfil.rol === "barbero" && request.nextUrl.searchParams.has("app"))
+    return redirigir(RUTAS.agenda);
   if (enLogin) return redirigir(destinoSegunPerfil(perfil));
   if (enPanel && perfil.rol !== "barbero") return redirigir(RUTAS.carnet);
   if (enPanel && !perfil.es_dueno && esRutaSoloDueno(path)) return redirigir(RUTAS.panel);
   if (enCarnet && perfil.rol !== "cliente") return redirigir(RUTAS.panel);
+  if (enTurnos && perfil.rol !== "cliente") return redirigir(RUTAS.agenda);
 
   return respuesta;
 }

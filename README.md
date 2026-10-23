@@ -5,6 +5,7 @@ Web de fidelización para una barbería. Cada cliente tiene un **carnet digital*
 - **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR) anotando cuánto pagó cada cliente, y canjea premios.
 - Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él.
 - **El cliente** entra con su teléfono y una contraseña, y ve su carnet, sus premios, los descuentos y su historial.
+- **Turnos online:** cada barbero carga sus horarios; el cliente elige barbero, día y horario y reserva desde el celular. El barbero ve su agenda del día (se actualiza sola) y recibe una notificación cuando le reservan o le cancelan un turno.
 
 Todo funciona dentro de los planes gratuitos de **Supabase** (base de datos y usuarios) y **Vercel** (hosting). No se envían mails: el barbero le pasa los datos de acceso al cliente en persona o por WhatsApp.
 
@@ -70,6 +71,7 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
    - [`supabase/migrations/20261010000300_seguridad.sql`](supabase/migrations/20261010000300_seguridad.sql)
    - [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql)
    - [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql)
+   - [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql) (siempre la **última**: va después de todas las anteriores)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -157,6 +159,8 @@ No lo borres (sus cortes quedarían "sin barbero"). Bloquealo: abrí **SQL Edito
 
    Si todavía no sabés la dirección final, dejá `NEXT_PUBLIC_SITE_URL` para después del primer deploy (paso 5 de esta lista).
 
+   **Opcional, para las notificaciones de turnos** (ver [13 → Turnos online](#turnos-online-20261023000200_turnossql)): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`. Sin ellas todo funciona igual, pero sin avisos.
+
 4. Tocá **Deploy** y esperá a que termine (un par de minutos).
 5. Copiá la dirección que te da Vercel (por ejemplo `https://fae-ten.vercel.app`). Si no habías cargado `NEXT_PUBLIC_SITE_URL`, cargala ahora en **Settings → Environment Variables** y hacé **Deployments → ⋯ → Redeploy**.
 
@@ -205,7 +209,9 @@ La web es una PWA: se puede "instalar" como una app, con ícono propio.
 - **Android (Chrome):** menú ⋮ → **Agregar a la pantalla principal** (o **Instalar app**).
 - **iPhone (Safari):** botón **Compartir** → **Agregar a inicio**.
 
-El ícono abre directo la pantalla de ingreso; si la sesión sigue abierta, va derecho al carnet.
+El ícono abre directo la pantalla de ingreso; si la sesión sigue abierta, va derecho al carnet (o, si es un barbero, a su **agenda**).
+
+**Barberos:** instalen la web en su celular de la misma forma y, ya instalada, entren a **Agenda → Activar notificaciones**. En iPhone las notificaciones solo funcionan con la web agregada a inicio (iOS 16.4 o más nuevo); en Android funcionan también desde Chrome sin instalar.
 
 ---
 
@@ -395,3 +401,44 @@ npx supabase db push        # aplica solo las migraciones que falten
 Usalo **solo** si las migraciones anteriores también se aplicaron con `db push`. Si las pegaste en el SQL Editor (como dice el paso 3), `db push` no sabe que ya están e intenta crearlas de nuevo: en ese caso seguí los pasos de arriba.
 
 </details>
+
+### Turnos online (`20261023000200_turnos.sql`)
+
+Qué hace: suma los **turnos online**. Agrega tablas nuevas (horarios de cada barbero, días especiales, turnos y suscripciones a notificaciones), las funciones que reservan y cancelan, y un aviso automático que marca el turno como "atendido" cuando le sumás el corte al cliente. **No cambia ni borra datos** y la versión anterior de la app sigue funcionando igual. Tiene que ir **después** de todas las migraciones anteriores (incluida la de premios por etapas, si vino en la misma actualización).
+
+**Orden:** primero la base, después las claves de notificaciones y por último el código.
+
+1. **(Recomendado) Hacé un respaldo** (Database → Backups), como en la actualización anterior.
+2. Si en esta misma actualización vino otra migración con fecha anterior (por ejemplo, la de premios por etapas), aplicala **primero**.
+3. Abrí **SQL Editor → New query**, pegá **todo** el contenido de [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez**.
+4. Verificá en una consulta nueva:
+
+   ```sql
+   select count(*) from turnos;                                   -- 0
+   select extname from pg_extension where extname = 'btree_gist'; -- btree_gist
+   ```
+
+5. **Claves de las notificaciones (VAPID).** Se generan **una sola vez** en tu computadora:
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+   Te muestra una **Public Key** y una **Private Key**. En Vercel, **Settings → Environment Variables**, cargá (para _Production_ y _Preview_):
+
+   | Nombre                         | Valor                                                     |
+   | ------------------------------ | --------------------------------------------------------- |
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | La **Public Key**                                         |
+   | `VAPID_PRIVATE_KEY`            | La **Private Key** (⚠️ secreta: nunca con `NEXT_PUBLIC_`) |
+   | `VAPID_SUBJECT`                | `mailto:` + tu email (por ejemplo `mailto:fae@gmail.com`) |
+
+   No las cambies después: si cambian, cada barbero tiene que volver a tocar **Activar notificaciones**. Si no las cargás, la app funciona igual pero sin avisos.
+
+6. **Publicá el código nuevo** (merge a `main`). Si cargaste las claves después del deploy, hacé **Deployments → ⋯ → Redeploy**.
+7. **Cargá los horarios.** Cada barbero entra a **Agenda → Horarios** (el empleado también lo tiene en la barra de abajo): por día, **Agregar franja** (desde, hasta y turnos de 30 o 60 minutos) y **Copiar a otros días**. Guardá. El dueño puede cargar o corregir los del empleado con el selector **Vos | Nombre**. Un barbero sin horarios no aparece para los clientes.
+8. **Activá las notificaciones** en el celular de cada barbero: instalá la web (paso [10](#10-instalar-el-carnet-en-el-celular)), abrila desde el ícono, entrá a **Agenda** y tocá **Activar notificaciones** → **Permitir**. En iPhone, primero agregala a inicio (Compartir → Agregar a inicio) y abrila desde ahí.
+9. Probalo: con un cliente de prueba, en el carnet tocá **Sacá turno**, elegí barbero, día y horario, y confirmá. El turno aparece en la agenda y al barbero le llega el aviso. Cancelalo desde el carnet.
+
+Reglas de los turnos: se reservan con **al menos 1 hora** de anticipación y **hasta 14 días** adelante; **1 turno a la vez** por cliente; el cliente cancela desde la web **hasta 3 horas antes** (después, le aparece el botón de WhatsApp). El barbero, desde la agenda, puede cancelar, escribir por WhatsApp, **reservar para un cliente** (por ejemplo, alguien que llamó) y **bloquear** un horario.
+
+> Si un empleado deja de trabajar, [`supabase/quitar-empleado.sql`](supabase/quitar-empleado.sql) ahora también borra su horario, así deja de ofrecerse. Sus turnos ya reservados no se borran: revisalos en la agenda.

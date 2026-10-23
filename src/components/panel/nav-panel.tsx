@@ -2,6 +2,8 @@
 
 import {
   BadgePercent,
+  CalendarDays,
+  Clock,
   House,
   ScanLine,
   Settings2,
@@ -22,17 +24,26 @@ const ESCANEAR: Item = { href: RUTAS.escanear, etiqueta: "Escanear", icono: Scan
 const CAJA: Item = { href: RUTAS.caja, etiqueta: "Caja", icono: Wallet };
 const DESCUENTOS: Item = { href: RUTAS.descuentos, etiqueta: "Descuentos", icono: BadgePercent };
 const PREMIOS: Item = { href: RUTAS.reglas, etiqueta: "Premios", icono: Settings2 };
+const AGENDA: Item = { href: RUTAS.agenda, etiqueta: "Agenda", icono: CalendarDays, exacto: true };
+const HORARIOS: Item = { href: RUTAS.horarios, etiqueta: "Horarios", icono: Clock };
+/** En la barra del dueño no hay "Horarios": la agenda queda marcada también ahí. */
+const AGENDA_Y_HORARIOS: Item = { ...AGENDA, exacto: false };
 
 /** El empleado no ve la caja ni la configuración. */
 const itemsLateral = (esDueno: boolean) =>
-  esDueno ? [INICIO, CLIENTES, ESCANEAR, CAJA, DESCUENTOS, PREMIOS] : [INICIO, CLIENTES, ESCANEAR];
+  esDueno
+    ? [INICIO, AGENDA, HORARIOS, CLIENTES, ESCANEAR, CAJA, DESCUENTOS, PREMIOS]
+    : [INICIO, AGENDA, HORARIOS, CLIENTES, ESCANEAR];
 
 /**
- * Barra inferior: hasta 5 lugares, con "Escanear" al centro. Para el dueño, la
- * caja ocupa el lugar de "Descuentos" (que sigue en el menú lateral y en Inicio).
+ * Barra inferior: 5 lugares, con "Escanear" al centro. Para el dueño, la caja y
+ * la agenda ocupan los lugares de "Descuentos" y "Premios" (que siguen en el
+ * menú lateral y en Inicio). El empleado tiene a mano sus horarios.
  */
 const itemsInferior = (esDueno: boolean) =>
-  esDueno ? [INICIO, CLIENTES, ESCANEAR, CAJA, PREMIOS] : [INICIO, ESCANEAR, CLIENTES];
+  esDueno
+    ? [INICIO, AGENDA_Y_HORARIOS, ESCANEAR, CLIENTES, CAJA]
+    : [INICIO, AGENDA, ESCANEAR, CLIENTES, HORARIOS];
 
 function useActivo() {
   const path = usePathname();

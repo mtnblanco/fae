@@ -10,7 +10,7 @@ export const sitio = {
     "Sumá sellos con cada corte y ganá premios. Tu carnet de beneficios de FaeBarberShop, siempre en el celular.",
   ciudad: "La Plata",
   /** Opcionales: si quedan vacíos, no se muestran. */
-  sedes: ["Calle 16 entre 40 y 41", "Calle 45 entre 28 y 29"],
+  sedes: ["Calle 45 entre 28 y 29"],
   horarios: "",
   /** Usuario de Instagram, sin "@". */
   instagram: "faebarbershop",

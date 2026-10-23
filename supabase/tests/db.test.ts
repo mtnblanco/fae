@@ -9,6 +9,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -82,7 +83,7 @@ async function esperarError(promesa: Promise<unknown>, patron: RegExp) {
 const SIN_PERMISO = /permission denied/;
 
 beforeAll(async () => {
-  db = new PGlite({ extensions: { pg_trgm, pgcrypto } });
+  db = new PGlite({ extensions: { pg_trgm, pgcrypto, btree_gist } });
   await db.exec(readFileSync(join(RAIZ, "tests/supabase-stubs.sql"), "utf8"));
   for (const archivo of readdirSync(join(RAIZ, "migrations")).sort()) {
     await db.exec(readFileSync(join(RAIZ, "migrations", archivo), "utf8"));
@@ -130,11 +131,11 @@ describe("estructura y hardening", () => {
     expect(r.opciones).toContain("security_invoker=true");
   });
 
-  it("cortes y canjes están publicados en Realtime", async () => {
+  it("cortes, canjes y turnos están publicados en Realtime", async () => {
     const tablas = await filas<{ tablename: string }>(
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`,
     );
-    expect(tablas.map((t) => t.tablename)).toEqual(["canjes", "cortes"]);
+    expect(tablas.map((t) => t.tablename)).toEqual(["canjes", "cortes", "turnos"]);
   });
 
   it("solo puede haber una regla activa", async () => {
@@ -670,7 +671,7 @@ const MIGRACION_BARBEROS = "20261022000100_barberos_y_precios.sql";
 
 describe("migración sobre una base con datos (como producción)", () => {
   it("el barbero existente queda como dueño y los cortes viejos siguen funcionando", async () => {
-    const base = new PGlite({ extensions: { pg_trgm, pgcrypto } });
+    const base = new PGlite({ extensions: { pg_trgm, pgcrypto, btree_gist } });
     const ejecutar = (sql: string) => base.exec(sql);
     const leer = async <T>(sql: string, params: unknown[] = []) =>
       (await base.query<T>(sql, params)).rows;
@@ -1485,7 +1486,7 @@ describe("migración de premios por etapas sobre una base con datos (como produc
     try {
       await ejecutar(readFileSync(join(RAIZ, "tests/supabase-stubs.sql"), "utf8"));
       const archivos = readdirSync(join(RAIZ, "migrations")).sort();
-      expect(archivos.at(-1)).toBe(MIGRACION_ETAPAS);
+      expect(archivos).toContain(MIGRACION_ETAPAS);
       for (const a of archivos.filter((x) => x < MIGRACION_ETAPAS)) {
         await ejecutar(readFileSync(join(RAIZ, "migrations", a), "utf8"));
       }
