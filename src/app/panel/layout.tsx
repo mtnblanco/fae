@@ -6,6 +6,7 @@ import { Logo } from "@/components/marca/logo";
 import { NavInferior, NavLateral } from "@/components/panel/nav-panel";
 import { RegistrarServiceWorker } from "@/components/panel/registrar-service-worker";
 import { requireBarbero } from "@/lib/auth";
+import { etiquetaPerfil } from "@/lib/permisos";
 import { RUTAS } from "@/lib/rutas";
 
 export const metadata: Metadata = {
@@ -29,9 +30,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
         </div>
         <div className="border-t border-hierro pt-4">
           <p className="truncate px-3 text-sm text-marfil">{perfil.nombre}</p>
-          <p className="px-3 text-[0.8125rem] text-arena">
-            {perfil.es_dueno ? "Dueño" : "Barbero"}
-          </p>
+          <p className="px-3 text-[0.8125rem] text-arena">{etiquetaPerfil(perfil)}</p>
           <Link
             href={RUTAS.cambiarPassword}
             className="mt-1 block rounded-md px-3 py-1 text-[0.8125rem] text-arena transition-colors hover:text-marfil"

@@ -565,5 +565,6 @@ createServer(async (req, res) => {
   console.log(`\n  Supabase local en http://127.0.0.1:${PUERTO}`);
   console.log("  Dueño:    barbero@faebarbershop.test / barbero123");
   console.log("  Empleado: empleado@faebarbershop.test / empleado123");
+  console.log("  Admin:    admin@faebarbershop.test / admin123");
   console.log("  Cliente: 2346401122 / cliente123  ·  Primer ingreso: 2346409999 / nuevo1234\n");
 });

@@ -30,7 +30,9 @@ export function ResumenCaja({ filas }: { filas: FilaFacturacion[] }) {
             <span className="min-w-0">
               <span className="block truncate text-marfil">
                 {f.barbero_nombre ?? "Sin barbero"}
-                {f.es_dueno ? (
+                {f.es_admin ? (
+                  <span className="ml-2 text-[0.8125rem] text-arena">Admin</span>
+                ) : f.es_dueno ? (
                   <span className="ml-2 text-[0.8125rem] text-arena">Dueño</span>
                 ) : null}
               </span>

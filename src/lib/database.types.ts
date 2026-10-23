@@ -36,6 +36,7 @@ export type Database = {
           busqueda: string;
           es_dueno: boolean;
           precio_habitual: number | null;
+          es_admin: boolean;
         };
         Insert: {
           id: string;
@@ -46,6 +47,7 @@ export type Database = {
           created_at?: string;
           es_dueno?: boolean;
           precio_habitual?: number | null;
+          es_admin?: boolean;
         };
         Update: {
           id?: string;
@@ -56,6 +58,7 @@ export type Database = {
           created_at?: string;
           es_dueno?: boolean;
           precio_habitual?: number | null;
+          es_admin?: boolean;
         };
         Relationships: [];
       };
@@ -307,6 +310,7 @@ export type Database = {
           cortes: number;
           cortes_sin_monto: number;
           total: number;
+          es_admin: boolean;
         }[];
       };
       metricas_panel: {

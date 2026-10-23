@@ -33,13 +33,17 @@ export async function miProximoTurno(): Promise<MiTurno | null> {
   return data?.[0] ?? null;
 }
 
-/** Barberos (para el selector del dueño). Por RLS, el empleado solo se ve a sí mismo. */
+/**
+ * Barberos que atienden (para el selector del dueño y del admin): el dueño y
+ * el empleado. El admin no atiende: no tiene agenda ni horarios.
+ */
 export async function listarBarberos() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("perfiles")
     .select("id, nombre, es_dueno")
     .eq("rol", "barbero")
+    .eq("es_admin", false)
     .order("es_dueno", { ascending: false })
     .order("nombre");
   fallar(error, "No se pudieron cargar los barberos");

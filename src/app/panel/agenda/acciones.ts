@@ -238,7 +238,9 @@ const suscripcionSchema = z.object({
 
 /** Guarda (o actualiza) la suscripción push de este dispositivo para el barbero. */
 export async function guardarSuscripcionPush(suscripcion: unknown): Promise<Resultado> {
-  await requireBarbero();
+  const { perfil } = await requireBarbero();
+  // El admin no tiene turnos: no recibe avisos (la base también lo rechaza).
+  if (perfil.es_admin) return fallo("El admin no recibe notificaciones de turnos.");
   const parse = suscripcionSchema.safeParse(suscripcion);
   if (!parse.success) return fallo("Este navegador no permite activar las notificaciones.");
   const supabase = await createClient();

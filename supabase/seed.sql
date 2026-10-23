@@ -4,6 +4,8 @@
 -- Crea:
 --   · 1 barbero dueño:    email barbero@faebarbershop.test  / contraseña barbero123
 --   · 1 barbero empleado: email empleado@faebarbershop.test / contraseña empleado123
+--   · 1 admin (ve todo como el dueño, pero no atiende ni tiene agenda):
+--                         email admin@faebarbershop.test    / contraseña admin123
 --   · 12 clientes: teléfono (ver tabla abajo)     / contraseña cliente123
 --   · 1 cliente nuevo que debe cambiar la contraseña:
 --                  teléfono 2346409999            / contraseña nuevo1234
@@ -51,11 +53,19 @@ $$;
 -- ─── Barberos ───────────────────────────────────────────────────────────────
 select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000001', 'barbero@faebarbershop.test', 'barbero123');
 select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000002', 'empleado@faebarbershop.test', 'empleado123');
+select pg_temp.crear_usuario('b0000000-0000-4000-8000-000000000003', 'admin@faebarbershop.test', 'admin123');
 
 insert into public.perfiles (id, nombre, telefono, rol, debe_cambiar_password, created_at, es_dueno)
 values
   ('b0000000-0000-4000-8000-000000000001', 'Leandro Ferreyra', null, 'barbero', false, now() - interval '200 days', true),
   ('b0000000-0000-4000-8000-000000000002', 'Nahuel Castro',    null, 'barbero', false, now() - interval '60 days',  false)
+on conflict (id) do nothing;
+
+-- El admin (el desarrollador): dueño + es_admin. No tiene cortes en el seed, así
+-- que no figura en la caja hasta que sume uno.
+insert into public.perfiles (id, nombre, telefono, rol, debe_cambiar_password, created_at, es_dueno, es_admin)
+values
+  ('b0000000-0000-4000-8000-000000000003', 'Martín Soporte', null, 'barbero', false, now() - interval '200 days', true, true)
 on conflict (id) do nothing;
 
 -- ─── Clientes ───────────────────────────────────────────────────────────────

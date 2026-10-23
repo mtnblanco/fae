@@ -6,6 +6,8 @@ import { RUTAS } from "@/lib/rutas";
  * que el empleado no puede usar.
  *
  *  · Dueño: todo.
+ *  · Admin (es_dueno + es_admin): todo lo del dueño, pero no atiende: no tiene
+ *    horarios, turnos ni agenda propia, y no se ofrece a los clientes.
  *  · Empleado: buscar, escanear, dar de alta, sumar cortes, deshacer los suyos y
  *    canjear premios. No ve montos ajenos ni la caja; no configura nada.
  */
@@ -25,4 +27,10 @@ export function puedeDeshacerCorte(
   corte: { registrado_por: string | null },
 ): boolean {
   return barbero.es_dueno || corte.registrado_por === barbero.id;
+}
+
+/** Etiqueta del perfil en el panel. */
+export function etiquetaPerfil(barbero: { es_dueno: boolean; es_admin: boolean }): string {
+  if (barbero.es_admin) return "Admin";
+  return barbero.es_dueno ? "Dueño" : "Barbero";
 }

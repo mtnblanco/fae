@@ -8,7 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 export type Sesion = {
   userId: string;
   email: string | null;
-  perfil: Pick<Perfil, "id" | "nombre" | "telefono" | "rol" | "debe_cambiar_password" | "es_dueno">;
+  perfil: Pick<
+    Perfil,
+    "id" | "nombre" | "telefono" | "rol" | "debe_cambiar_password" | "es_dueno" | "es_admin"
+  >;
 };
 
 /**
@@ -23,7 +26,7 @@ export const obtenerSesion = cache(async (): Promise<Sesion | null> => {
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, telefono, rol, debe_cambiar_password, es_dueno")
+    .select("id, nombre, telefono, rol, debe_cambiar_password, es_dueno, es_admin")
     .eq("id", claims.sub)
     .maybeSingle();
   if (!perfil) return null;
@@ -54,7 +57,7 @@ export async function requireBarbero(): Promise<Sesion> {
   return sesion;
 }
 
-/** Solo el barbero dueño (caja, precios, regla de premios, descuentos, bajas). */
+/** Solo el barbero dueño o el admin (caja, precios, regla de premios, descuentos, bajas). */
 export async function requireDueno(): Promise<Sesion> {
   const sesion = await requireBarbero();
   if (!sesion.perfil.es_dueno) redirect(RUTAS.panel);

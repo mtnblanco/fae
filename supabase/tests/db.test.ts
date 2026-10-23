@@ -359,7 +359,7 @@ describe("cliente: escritura (todo prohibido)", () => {
 describe("barbero: lectura", () => {
   it("ve todos los perfiles, cortes y descuentos", async () => {
     await conRol(como(BARBERO), async () => {
-      expect(await contar(`select * from perfiles`)).toBe(15);
+      expect(await contar(`select * from perfiles`)).toBe(16); // 3 barberos (con el admin) + 13 clientes
       expect(await contar(`select * from resumen_clientes`)).toBe(13);
       expect(await contar(`select * from descuentos_asociados`)).toBe(6);
       expect(await contar(`select * from cortes`)).toBe(74);

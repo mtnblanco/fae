@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { esRutaSoloDueno, puedeDeshacerCorte } from "./permisos";
+import { esRutaSoloDueno, etiquetaPerfil, puedeDeshacerCorte } from "./permisos";
 
 describe("esRutaSoloDueno", () => {
   it("la caja, la regla de premios y los descuentos son del dueño", () => {
@@ -31,5 +31,13 @@ describe("puedeDeshacerCorte", () => {
     expect(puedeDeshacerCorte(empleado, { registrado_por: "e" })).toBe(true);
     expect(puedeDeshacerCorte(empleado, { registrado_por: "d" })).toBe(false);
     expect(puedeDeshacerCorte(empleado, { registrado_por: null })).toBe(false);
+  });
+});
+
+describe("etiquetaPerfil", () => {
+  it("distingue admin, dueño y empleado", () => {
+    expect(etiquetaPerfil({ es_dueno: true, es_admin: true })).toBe("Admin");
+    expect(etiquetaPerfil({ es_dueno: true, es_admin: false })).toBe("Dueño");
+    expect(etiquetaPerfil({ es_dueno: false, es_admin: false })).toBe("Barbero");
   });
 });

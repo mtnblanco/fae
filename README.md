@@ -3,7 +3,7 @@
 Web de fidelización para una barbería. Cada cliente tiene un **carnet digital** en el celular con un código QR y sellos: el barbero escanea el QR en cada corte, se estampa un sello y, al llegar a cada etapa de la tarjeta (por ejemplo, al 4.º corte 20% off, al 7.º 50% off y al 10.º corte gratis), el cliente gana un premio. Además, el carnet muestra descuentos en comercios amigos.
 
 - **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR) anotando cuánto pagó cada cliente, y canjea premios.
-- Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él.
+- Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él. Opcionalmente puede haber un **admin**: ve y configura todo como el dueño, pero no atiende (no tiene agenda ni aparece al sacar turno).
 - **El cliente** entra con su teléfono y una contraseña, y ve su carnet, sus premios, los descuentos y su historial.
 - **Turnos online:** cada barbero carga sus horarios; el cliente elige barbero, día y horario y reserva desde el celular. El barbero ve su agenda del día (se actualiza sola) y recibe una notificación cuando le reservan o le cancelan un turno.
 
@@ -71,7 +71,8 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
    - [`supabase/migrations/20261010000300_seguridad.sql`](supabase/migrations/20261010000300_seguridad.sql)
    - [`supabase/migrations/20261022000100_barberos_y_precios.sql`](supabase/migrations/20261022000100_barberos_y_precios.sql)
    - [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql)
-   - [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql) (siempre la **última**: va después de todas las anteriores)
+   - [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql)
+   - [`supabase/migrations/20261024000100_admin.sql`](supabase/migrations/20261024000100_admin.sql) (siempre la **última**: va después de todas las anteriores)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -137,6 +138,10 @@ Qué puede hacer cada uno:
 | Caja: totales por barbero y por período                               | ✅         | ❌                        |
 | Editar el precio habitual de un cliente                               | ✅         | ❌ (lo ve, para cobrarlo) |
 | Regla de premios, descuentos, borrar clientes                         | ✅         | ❌                        |
+
+### 5.1.1 Cuenta de admin (opcional)
+
+Si alguien tiene que **ver y configurar todo como el dueño pero no corta** (por ejemplo, quien mantiene la web), su cuenta se crea como dueño (paso 5) y después se convierte en **admin** con [`supabase/marcar-admin.sql`](supabase/marcar-admin.sql). El admin no aparece cuando los clientes sacan turno, no tiene horarios ni agenda propia y no recibe notificaciones; en la caja figura solo si suma algún corte (con la etiqueta "Admin"). Los pasos están en la sección [13](#perfil-admin-20261024000100_adminsql).
 
 ### 5.2 Si el empleado deja de trabajar
 
@@ -252,6 +257,7 @@ Usuarios de ejemplo (del seed):
 | ---------------------------- | ------------------------------------------------------- | ------------- |
 | Barbero dueño                | `barbero@faebarbershop.test` (tocá "¿Sos el barbero?")  | `barbero123`  |
 | Barbero empleado             | `empleado@faebarbershop.test` (tocá "¿Sos el barbero?") | `empleado123` |
+| Admin (ve todo, no atiende)  | `admin@faebarbershop.test` (tocá "¿Sos el barbero?")    | `admin123`    |
 | Cliente                      | `2346401122`                                            | `cliente123`  |
 | Cliente en su primer ingreso | `2346409999`                                            | `nuevo1234`   |
 
@@ -349,6 +355,38 @@ En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso
 ## 13. Actualizar una instalación que ya está funcionando
 
 Cuando el código trae una **migración nueva** (un archivo nuevo en `supabase/migrations/`), hay que aplicarla en Supabase **antes** de publicar el código nuevo. La migración nueva funciona con la versión anterior de la app, pero la app nueva necesita la migración.
+
+### Perfil admin (`20261024000100_admin.sql`)
+
+Qué hace: separa la cuenta que **supervisa** de la que **atiende**. Hoy la única cuenta "dueño" es la del desarrollador, que no corta. Con esta actualización:
+
+- La cuenta del desarrollador pasa a ser **admin**: sigue viendo y configurando todo (caja, montos, las dos agendas, precios, premios, descuentos, horarios de los barberos, borrar clientes) y puede escanear y sumar cortes (quedan a su nombre), pero **no aparece cuando un cliente saca turno**, no tiene horarios ni agenda propia, no recibe notificaciones y en la caja figura solo si cargó algún corte (con la etiqueta "Admin").
+- El **dueño real** de la barbería tiene su propia cuenta de dueño: corta, tiene su agenda y sus horarios, y ve todo.
+- El empleado sigue exactamente igual.
+
+La migración **no convierte a nadie en admin** ni cambia datos: hasta el paso 4, todos ven lo mismo de siempre. La versión publicada de la app sigue funcionando con la base migrada.
+
+**Orden exacto:** migración → código → marcar admin → cuenta del dueño real.
+
+1. **(Recomendado) Hacé un respaldo** (Database → Backups), como en las actualizaciones anteriores.
+2. **Migración.** Abrí **SQL Editor → New query**, pegá **todo** el contenido de [`supabase/migrations/20261024000100_admin.sql`](supabase/migrations/20261024000100_admin.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez** (si lo corrés de nuevo da error porque la restricción ya existe; no rompe nada). Verificá en una consulta nueva:
+
+   ```sql
+   select nombre, es_dueno, es_admin from perfiles where rol = 'barbero';
+   ```
+
+   Tienen que aparecer tus barberos de siempre, **todos con `es_admin = false`**.
+
+3. **Publicá el código nuevo** (merge a `main`; Vercel publica solo en un par de minutos). **No lo publiques antes del paso 2**: la app nueva lee la columna `es_admin` y, sin ella, nadie podría entrar al panel.
+4. **Marcá la cuenta del desarrollador como admin.** Si esa cuenta tiene turnos de clientes reservados de hoy en adelante, primero cancelalos desde **Agenda** (el script te avisa y no cambia nada si quedó alguno). Después abrí **SQL Editor → New query**, pegá [`supabase/marcar-admin.sql`](supabase/marcar-admin.sql), cambiá el email marcado con 👉 por **el email con el que entra el desarrollador** y tocá **Run**. Al final tiene que aparecer esa cuenta con `es_admin = true`. Se puede correr más de una vez. Borra el horario de esa cuenta (ya no atiende) y apaga sus notificaciones; sus cortes no se tocan.
+5. **Creá la cuenta del dueño real** (el que corta), como dueño que atiende:
+   1. En Supabase, **Authentication → Users → Add user → Create new user**: **el email del dueño** y una **contraseña** (al menos 6 caracteres), tildá **Auto Confirm User** y tocá **Create user**.
+   2. **SQL Editor → New query**, pegá [`supabase/crear-barbero.sql`](supabase/crear-barbero.sql), cambiá los dos valores marcados con 👉 (**el nombre del dueño**, así lo ven los clientes al sacar turno, y **su email**) y tocá **Run**. Al final tiene que aparecer su fila con `es_dueno = true` y `es_admin = false` (y aparte la del admin, con `es_admin = true`).
+   3. Pasale su email y su contraseña. Entra con **"¿Sos el barbero? Entrá con tu email"** (después la puede cambiar desde **Cambiar contraseña**).
+6. **Horarios del dueño.** Él (o el admin, desde **Agenda → Horarios** eligiendo su nombre) carga sus horarios. Hasta que tenga horarios no aparece para los clientes. Que active las notificaciones en su celular (**Agenda → Activar notificaciones**), como en el paso 8 de "Turnos online".
+7. Probalo: entrando como admin, la **Agenda** muestra **Dueño | Empleado | Ambos** (sin "Vos") y **Horarios** pregunta de quién; con un cliente, **Sacá turno** muestra solo a los barberos que atienden.
+
+> Para deshacerlo (que la cuenta vuelva a ser un dueño que atiende), el final de `marcar-admin.sql` trae la consulta.
 
 ### Premios por etapas (`20261023000100_premios_por_etapas.sql`)
 

@@ -45,16 +45,33 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
   if (!dias.includes(pedida)) dias.push(pedida);
 
   // El empleado ve solo su agenda; el dueño elige: él, el empleado o ambos.
+  // El admin no atiende (no tiene agenda): elige entre los barberos y arranca
+  // viendo la de todos.
+  const esAdmin = perfil.es_admin;
   const barberos = perfil.es_dueno
     ? await listarBarberos()
     : [{ id: userId, nombre: perfil.nombre, es_dueno: false }];
-  const ver = typeof sp.ver === "string" ? sp.ver : userId;
+  const ver = typeof sp.ver === "string" ? sp.ver : esAdmin ? "ambos" : userId;
   const elegidos =
     perfil.es_dueno && ver === "ambos"
       ? barberos
       : barberos.filter((b) => b.id === (perfil.es_dueno ? ver : userId));
-  const mostrados = elegidos.length > 0 ? elegidos : barberos.filter((b) => b.id === userId);
+  const mostrados =
+    elegidos.length > 0 ? elegidos : esAdmin ? barberos : barberos.filter((b) => b.id === userId);
   const ambos = mostrados.length > 1;
+
+  if (mostrados.length === 0) {
+    return (
+      <div className="grid grid-cols-1 gap-5">
+        <EncabezadoPagina className="mb-0 sm:mb-0" titulo="Agenda" />
+        <EstadoVacio
+          icono={CalendarDays}
+          titulo="Todavía no hay barberos"
+          descripcion="Cuando haya un barbero cargado, vas a ver su agenda acá."
+        />
+      </div>
+    );
+  }
 
   const [agendas, conTurnos] = await Promise.all([
     Promise.all(mostrados.map((b) => agendaDelDia(b.id, pedida))),
@@ -108,7 +125,8 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
         }
       />
 
-      <ActivarNotificaciones />
+      {/* El admin no tiene turnos: no recibe avisos. */}
+      {esAdmin ? null : <ActivarNotificaciones />}
 
       {perfil.es_dueno && barberos.length > 1 ? (
         <SelectorBarbero
@@ -117,7 +135,7 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
               valor: b.id,
               etiqueta: b.id === userId ? "Vos" : (b.nombre.split(" ")[0] ?? b.nombre),
             })),
-            { valor: "ambos", etiqueta: "Ambos" },
+            { valor: "ambos", etiqueta: barberos.length === 2 ? "Ambos" : "Todos" },
           ]}
           elegido={ambos ? "ambos" : (unico?.id ?? userId)}
         />
