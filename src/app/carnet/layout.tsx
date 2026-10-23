@@ -14,7 +14,7 @@ export default async function LayoutCarnet({ children }: LayoutProps<"/carnet">)
       <SaltarAlContenido />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(70%_100%_at_50%_0%,rgb(201_161_91/0.12),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-[radial-gradient(70%_100%_at_50%_0%,rgb(255_190_30/0.07),transparent)]"
       />
       <header className="mx-auto flex h-16 max-w-md items-center justify-between px-(--gutter)">
         <Logo href={RUTAS.carnet} tamano="sm" />

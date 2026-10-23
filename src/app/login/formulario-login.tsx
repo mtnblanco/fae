@@ -45,7 +45,7 @@ export function FormularioLogin() {
         )}
       </Campo>
 
-      <BotonEnviar size="lg" className="mt-1 w-full" textoCargando="Ingresando…">
+      <BotonEnviar size="lg" variant="neon" className="mt-1 w-full" textoCargando="Ingresando…">
         Ingresar
       </BotonEnviar>
 

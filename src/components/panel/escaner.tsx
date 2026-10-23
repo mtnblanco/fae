@@ -89,8 +89,8 @@ export function Escaner() {
 
   if (estado.fase === "error-camara") {
     return (
-      <div className="flex flex-col items-center rounded-2xl border border-dashed border-cuero px-6 py-10 text-center">
-        <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-nogal-claro text-bronce">
+      <div className="flex flex-col items-center rounded-2xl border border-dashed border-hierro px-6 py-10 text-center">
+        <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-ebano-claro text-oro">
           <CameraOff className="size-5" aria-hidden />
         </span>
         <p className="font-titulo text-xl">No pudimos usar la cámara</p>
@@ -162,7 +162,7 @@ export function Escaner() {
     return (
       <div className="grid grid-cols-1 gap-4" aria-live="polite">
         <Celebracion disparo={festejo} />
-        <div className="textura-grano rounded-2xl border border-cuero bg-nogal p-5 shadow-suave">
+        <div className="textura-grano rounded-2xl border border-hierro bg-ebano p-5 shadow-suave">
           <p className="text-sm text-arena">Cliente</p>
           <p className="font-titulo text-[1.75rem] leading-tight text-marfil">{c.nombre}</p>
           <p className="mt-1 text-sm text-arena">
@@ -190,7 +190,7 @@ export function Escaner() {
             </>
           ) : null}
           {p.premiosDisponibles > 0 ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-bronce/15 px-3 py-1.5 text-sm font-medium text-bronce-claro">
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-oro/40 bg-oro/10 px-3 py-1.5 text-sm font-medium text-oro-claro">
               <Gift className="size-4" aria-hidden />
               {p.premiosDisponibles === 1
                 ? "Tiene 1 premio"
@@ -201,9 +201,12 @@ export function Escaner() {
         </div>
 
         {estado.corteSumado ? (
-          <p className="flex items-center justify-center gap-2 rounded-xl bg-salvia/10 py-3 text-sm font-medium text-salvia">
-            <Check className="size-4" aria-hidden />
-            Corte sumado
+          <p className="flex items-center gap-3 rounded-xl border border-oro/40 bg-ebano px-4 py-3 text-[0.9375rem] font-medium text-marfil">
+            {/* El único neón de este momento: el "sello" del corte recién sumado. */}
+            <span className="sello-lleno flex size-8 shrink-0 items-center justify-center">
+              <Check className="size-4" strokeWidth={2.75} aria-hidden />
+            </span>
+            Corte sumado a {primerNombre}
           </p>
         ) : (
           <>
@@ -214,7 +217,7 @@ export function Escaner() {
               sinPrecio={c.precio_habitual === null}
               disabled={sumar.pendiente}
             />
-            <Button size="xl" onClick={alSumar} disabled={sumar.pendiente}>
+            <Button size="xl" variant="neon" onClick={alSumar} disabled={sumar.pendiente}>
               {sumar.pendiente ? (
                 <Loader2 className="animate-spin" aria-hidden />
               ) : (
@@ -228,12 +231,7 @@ export function Escaner() {
         {p.premiosDisponibles > 0 ? (
           <Confirmar
             disparador={
-              <Button
-                size="xl"
-                variant="outline"
-                disabled={canjear.pendiente}
-                className="border-bronce/50 text-bronce-claro"
-              >
+              <Button size="xl" variant="oro" disabled={canjear.pendiente}>
                 {canjear.pendiente ? (
                   <Loader2 className="animate-spin" aria-hidden />
                 ) : (
@@ -267,7 +265,7 @@ export function Escaner() {
 
   return (
     <div className="grid grid-cols-1 gap-4">
-      <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-2xl border border-cuero bg-black">
+      <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-2xl border border-hierro bg-black">
         <Scanner
           onScan={alEscanear}
           onError={alError}
@@ -284,20 +282,28 @@ export function Escaner() {
           styles={{ container: { width: "100%", height: "100%" }, video: { objectFit: "cover" } }}
           sound={false}
         />
-        {/* Visor propio, con las esquinas en bronce */}
-        <div aria-hidden className="pointer-events-none absolute inset-[18%]">
+        {/* Visor propio: esquinas de neón (la luz de esta pantalla) y línea de lectura. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-[18%] [filter:drop-shadow(0_0_2px_rgb(255_225_77/0.8))_drop-shadow(0_0_8px_rgb(255_190_30/0.5))]"
+        >
           {[
-            "top-0 left-0 border-t-4 border-l-4 rounded-tl-xl",
-            "top-0 right-0 border-t-4 border-r-4 rounded-tr-xl",
-            "bottom-0 left-0 border-b-4 border-l-4 rounded-bl-xl",
-            "bottom-0 right-0 border-b-4 border-r-4 rounded-br-xl",
+            "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
+            "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
+            "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
+            "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl",
           ].map((c) => (
-            <span key={c} className={`absolute size-10 border-bronce ${c}`} />
+            <span key={c} className={`absolute size-10 border-neon ${c}`} />
           ))}
+          {estado.fase === "escaneando" ? (
+            <div className="barrido absolute inset-x-[8%] inset-y-0 flex items-center will-change-transform">
+              <span className="h-0.5 w-full rounded-full bg-neon-nucleo/90" />
+            </div>
+          ) : null}
         </div>
         {estado.fase === "buscando" ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-espresso/70">
-            <Loader2 className="size-8 animate-spin text-bronce" aria-label="Buscando cliente" />
+          <div className="absolute inset-0 flex items-center justify-center bg-noche/75">
+            <Loader2 className="size-8 animate-spin text-oro" aria-label="Buscando cliente" />
           </div>
         ) : null}
       </div>

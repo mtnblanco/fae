@@ -81,7 +81,7 @@ export default async function PaginaCliente({
                 : ", todavía sin cortes"}
             </p>
             {cliente.debe_cambiar_password ? (
-              <p className="mt-2 text-[0.8125rem] text-bronce">
+              <p className="mt-2 text-[0.8125rem] text-oro">
                 Todavía no entró a cambiar su contraseña.
               </p>
             ) : null}
@@ -90,7 +90,7 @@ export default async function PaginaCliente({
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={`tel:${cliente.telefono}`}
-            className="numeros inline-flex h-9 items-center gap-2 rounded-full border border-cuero px-3.5 text-sm text-marfil transition-colors hover:bg-nogal-claro"
+            className="numeros inline-flex h-9 items-center gap-2 rounded-full border border-hierro px-3.5 text-sm text-marfil transition-colors hover:bg-ebano-claro"
           >
             <Phone className="size-3.5 text-arena" aria-hidden />
             {formatearTelefono(cliente.telefono)}
@@ -100,7 +100,7 @@ export default async function PaginaCliente({
               href={`https://wa.me/${whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-2 rounded-full border border-cuero px-3.5 text-sm text-marfil transition-colors hover:bg-nogal-claro"
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-hierro px-3.5 text-sm text-marfil transition-colors hover:bg-ebano-claro"
             >
               <MessageCircle className="size-3.5 text-arena" aria-hidden />
               WhatsApp
@@ -109,7 +109,7 @@ export default async function PaginaCliente({
           {esDueno ? (
             <DialogoPrecio cliente={cliente} />
           ) : (
-            <span className="numeros inline-flex h-9 items-center gap-1.5 rounded-full border border-cuero px-3.5 text-sm text-marfil">
+            <span className="numeros inline-flex h-9 items-center gap-1.5 rounded-full border border-hierro px-3.5 text-sm text-marfil">
               <span className="text-arena">Precio</span>
               {cliente.precio_habitual === null
                 ? "sin cargar"
@@ -163,7 +163,7 @@ export default async function PaginaCliente({
         </p>
       </section>
 
-      <section aria-labelledby="titulo-cuenta" className="border-t border-cuero pt-8">
+      <section aria-labelledby="titulo-cuenta" className="border-t border-hierro pt-8">
         <h2 id="titulo-cuenta" className="text-2xl">
           Cuenta
         </h2>

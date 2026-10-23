@@ -103,8 +103,8 @@ export default async function PaginaClientes({ searchParams }: PageProps<"/panel
                     className={cn(
                       "inline-flex h-9 items-center rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors",
                       filtro === f
-                        ? "border-bronce bg-bronce/15 text-bronce-claro"
-                        : "border-cuero text-arena hover:border-arena/50 hover:text-marfil",
+                        ? "border-oro bg-oro/15 text-oro-claro"
+                        : "border-hierro-claro text-arena hover:border-arena/60 hover:text-marfil",
                     )}
                   >
                     {ETIQUETAS_FILTRO[f]}
@@ -125,7 +125,7 @@ export default async function PaginaClientes({ searchParams }: PageProps<"/panel
                 className={cn(
                   "rounded-md px-2 py-1.5 transition-colors",
                   orden === o
-                    ? "text-marfil underline decoration-bronce underline-offset-4"
+                    ? "text-marfil underline decoration-oro underline-offset-4"
                     : "text-arena hover:text-marfil",
                 )}
               >
@@ -169,7 +169,7 @@ export default async function PaginaClientes({ searchParams }: PageProps<"/panel
             />
           )
         ) : (
-          <ul className="divide-y divide-cuero overflow-hidden rounded-xl border border-cuero bg-nogal">
+          <ul className="divide-y divide-hierro overflow-hidden rounded-xl border border-hierro bg-ebano">
             {resultado.clientes.map((c) => (
               <FilaCliente key={c.id} cliente={c} />
             ))}

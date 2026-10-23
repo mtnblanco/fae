@@ -11,8 +11,8 @@ export function AvisoFormulario({ tipo, mensaje }: { tipo: "error" | "ok"; mensa
       className={cn(
         "flex items-start gap-2.5 rounded-lg border px-3.5 py-3 text-sm leading-snug",
         tipo === "error"
-          ? "border-tinta-clara/30 bg-tinta/15 text-tinta-clara"
-          : "border-salvia/30 bg-salvia/10 text-salvia",
+          ? "border-error/30 bg-error/15 text-error"
+          : "border-exito/30 bg-exito/10 text-exito",
       )}
     >
       <Icono className="mt-px size-4 shrink-0" aria-hidden />

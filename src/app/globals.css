@@ -5,69 +5,110 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ════════════════════════════════════════════════════════════════════════════
-   Sistema de diseño — FaeBarberShop
-   Materiales: cuero, bronce, nogal y la tinta del sello. Un solo tema (oscuro).
-   Todos los colores, radios y sombras se definen acá y en ningún otro lado.
+   Sistema de diseño — FaeBarberShop: "Noche con un neón"
+   Una barbería de noche con UN cartel encendido. El neón es una lámpara, no un
+   color de interfaz: logo, una palabra clave, los sellos ganados y la acción
+   principal de la pantalla. Todo lo demás trabaja en oro apagado y marfil.
+   Manual: DECISIONES.md (sección Marca). Un solo tema (oscuro).
+   Todos los colores, brillos y sombras se definen acá y en ningún otro lado.
    ════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Paleta base */
-  --espresso: #15110e; /* fondo */
-  --nogal: #1e1915; /* superficies */
-  --nogal-claro: #28211c; /* superficies elevadas, hover */
-  --cuero: #3a3129; /* bordes */
-  --marfil: #eee6d8; /* texto principal */
-  --arena: #b0a493; /* texto secundario (7:1 sobre el fondo) */
-  --bronce: #c9a15b; /* acento */
-  --bronce-claro: #e2c27f;
-  --bronce-oscuro: #8a6a33;
-  --tinta: #8e2f2b; /* tinta de los sellos (solo gráfico, no texto) */
-  --tinta-clara: #e58a7d; /* errores como texto (AA sobre el fondo) */
-  --salvia: #8fb39a; /* éxito */
+  /* ── Noche: fondos y superficies ── */
+  --noche: #12100c; /* fondo */
+  --ebano: #1d1a15; /* superficies */
+  --ebano-claro: #26221b; /* elevada / hover */
+  --ebano-alto: #302a21; /* presionado / popover sobre tarjeta */
+  --hierro: #3a3226; /* bordes decorativos y divisores (no para controles) */
+  --hierro-claro: #5a4f3d; /* sellos vacíos, borde hover */
+  --borde-campo: #7a6e58; /* bordes de inputs: 3.8:1 sobre noche (WCAG 1.4.11) */
 
-  /* Mapeo a los tokens de shadcn/ui */
-  --background: var(--espresso);
-  --foreground: var(--marfil);
-  --card: var(--nogal);
-  --card-foreground: var(--marfil);
-  --popover: var(--nogal);
-  --popover-foreground: var(--marfil);
-  --primary: var(--bronce);
-  --primary-foreground: #1a140c;
-  --secondary: var(--nogal-claro);
-  --secondary-foreground: var(--marfil);
-  --muted: var(--nogal-claro);
-  --muted-foreground: var(--arena);
-  --accent: var(--nogal-claro);
-  --accent-foreground: var(--marfil);
-  --destructive: var(--tinta-clara);
-  --border: var(--cuero);
-  --input: var(--cuero);
-  --ring: var(--bronce);
-  --chart-1: var(--bronce);
-  --chart-2: var(--bronce-claro);
-  --chart-3: var(--arena);
-  --chart-4: var(--tinta);
-  --chart-5: var(--salvia);
-  --sidebar: var(--nogal);
-  --sidebar-foreground: var(--marfil);
-  --sidebar-primary: var(--bronce);
-  --sidebar-primary-foreground: #1a140c;
-  --sidebar-accent: var(--nogal-claro);
-  --sidebar-accent-foreground: var(--marfil);
-  --sidebar-border: var(--cuero);
-  --sidebar-ring: var(--bronce);
+  /* ── Texto ── */
+  --marfil: #f1ebdd; /* principal, 16:1 */
+  --arena: #ada28d; /* secundario, 7.5:1 */
+  --ceniza: #8f8571; /* terciario, 5.2:1 (no sobre ébano claro) */
 
-  /* Radios: el carnet es el único elemento "objeto"; el resto, más contenido. */
-  --radius: 0.75rem;
+  /* ── Oro: el acento de todos los días ── */
+  --oro: #c9a227;
+  --oro-claro: #ddb93f;
+  --oro-oscuro: #8c711b; /* solo gráfico */
 
-  /* Sombras */
+  /* ── Neón: la única luz ── */
+  --neon: #ffe14d;
+  --neon-nucleo: #fff7cc;
+  --neon-apagado: #4d4428;
+  --sobre-neon: #15110a;
+  --neon-rgb: 255 225 77;
+  --halo-rgb: 255 190 30;
+
+  /* ── Estados ── */
+  --exito: #9ccb86;
+  --error: #f2836b;
+
+  /* ── Brillos ── */
+  /* Texto ≥ 28px: núcleo + tubo + halo. En em: escala con el tamaño. */
+  --brillo-texto:
+    0 0 0.02em rgb(255 247 204 / 0.9), 0 0 0.08em rgb(var(--neon-rgb) / 0.9),
+    0 0 0.22em rgb(var(--halo-rgb) / 0.55), 0 0 0.55em rgb(var(--halo-rgb) / 0.3);
+  /* Texto 16–27px: sin núcleo blanco, halo corto. */
+  --brillo-texto-suave:
+    0 0 0.1em rgb(var(--neon-rgb) / 0.55), 0 0 0.35em rgb(var(--halo-rgb) / 0.25);
+  /* Botón principal y sellos llenos. */
+  --brillo-caja:
+    0 0 0 1px rgb(255 247 204 / 0.55) inset, 0 0 6px rgb(var(--neon-rgb) / 0.55),
+    0 0 18px -2px rgb(var(--halo-rgb) / 0.45), 0 0 40px -6px rgb(var(--halo-rgb) / 0.3);
+  /* Sellos: la misma luz, más corta (son chicos y van de a muchos). */
+  --brillo-sello:
+    0 0 0 1px rgb(255 247 204 / 0.6) inset, 0 0 5px rgb(var(--neon-rgb) / 0.5),
+    0 0 14px -3px rgb(var(--halo-rgb) / 0.45);
+  /* Marco del escáner, carnet "premio listo". */
+  --brillo-caja-suave:
+    0 0 0 1px rgb(var(--neon-rgb) / 0.35), 0 0 14px -4px rgb(var(--halo-rgb) / 0.4);
+  /* Luz que el cartel derrama sobre la pared (fondo del hero). */
+  --luz-pared: radial-gradient(60% 55% at 50% 40%, rgb(var(--halo-rgb) / 0.12), transparent 70%);
+
+  /* ── Sombras de profundidad (sin color) ── */
   --sombra-suave: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px -4px rgb(0 0 0 / 0.5);
   --sombra-elevada: 0 2px 4px rgb(0 0 0 / 0.45), 0 18px 40px -12px rgb(0 0 0 / 0.7);
   --sombra-carnet:
-    0 1px 0 rgb(255 255 255 / 0.06) inset, 0 -1px 0 rgb(0 0 0 / 0.4) inset,
+    0 1px 0 rgb(255 255 255 / 0.05) inset, 0 0 0 1px var(--hierro) inset,
     0 30px 60px -20px rgb(0 0 0 / 0.85), 0 12px 24px -12px rgb(0 0 0 / 0.6);
-  --brillo-bronce: 0 0 0 1px rgb(201 161 91 / 0.35), 0 8px 30px -8px rgb(201 161 91 / 0.35);
+
+  /* ── Mapeo a los tokens de shadcn/ui ── */
+  --background: var(--noche);
+  --foreground: var(--marfil);
+  --card: var(--ebano);
+  --card-foreground: var(--marfil);
+  --popover: var(--ebano-claro);
+  --popover-foreground: var(--marfil);
+  --primary: var(--oro); /* acento por defecto (switch, botón default) */
+  --primary-foreground: var(--sobre-neon);
+  --secondary: var(--ebano-claro);
+  --secondary-foreground: var(--marfil);
+  --muted: var(--ebano-claro);
+  --muted-foreground: var(--arena);
+  --accent: var(--ebano-claro);
+  --accent-foreground: var(--marfil);
+  --destructive: var(--error);
+  --border: var(--hierro);
+  --input: var(--borde-campo);
+  --ring: var(--oro-claro);
+  --chart-1: var(--oro);
+  --chart-2: var(--oro-claro);
+  --chart-3: var(--arena);
+  --chart-4: var(--oro-oscuro);
+  --chart-5: var(--exito);
+  --sidebar: var(--ebano);
+  --sidebar-foreground: var(--marfil);
+  --sidebar-primary: var(--oro);
+  --sidebar-primary-foreground: var(--sobre-neon);
+  --sidebar-accent: var(--ebano-claro);
+  --sidebar-accent-foreground: var(--marfil);
+  --sidebar-border: var(--hierro);
+  --sidebar-ring: var(--oro-claro);
+
+  /* Radios: el carnet es el único elemento "objeto"; el resto, más contenido. */
+  --radius: 0.75rem;
 
   /* Espaciados de layout */
   --gutter: 1rem;
@@ -114,23 +155,31 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Colores de marca como utilidades (bg-bronce, text-arena, etc.) */
-  --color-espresso: var(--espresso);
-  --color-nogal: var(--nogal);
-  --color-nogal-claro: var(--nogal-claro);
-  --color-cuero: var(--cuero);
+  /* Colores de marca como utilidades (bg-ebano, text-oro, etc.) */
+  --color-noche: var(--noche);
+  --color-ebano: var(--ebano);
+  --color-ebano-claro: var(--ebano-claro);
+  --color-ebano-alto: var(--ebano-alto);
+  --color-hierro: var(--hierro);
+  --color-hierro-claro: var(--hierro-claro);
+  --color-borde-campo: var(--borde-campo);
   --color-marfil: var(--marfil);
   --color-arena: var(--arena);
-  --color-bronce: var(--bronce);
-  --color-bronce-claro: var(--bronce-claro);
-  --color-bronce-oscuro: var(--bronce-oscuro);
-  --color-tinta: var(--tinta);
-  --color-tinta-clara: var(--tinta-clara);
-  --color-salvia: var(--salvia);
+  --color-ceniza: var(--ceniza);
+  --color-oro: var(--oro);
+  --color-oro-claro: var(--oro-claro);
+  --color-oro-oscuro: var(--oro-oscuro);
+  --color-neon: var(--neon);
+  --color-neon-nucleo: var(--neon-nucleo);
+  --color-neon-apagado: var(--neon-apagado);
+  --color-sobre-neon: var(--sobre-neon);
+  --color-exito: var(--exito);
+  --color-error: var(--error);
 
   --font-sans: var(--font-texto);
   --font-heading: var(--font-titulo);
   --font-titulo: var(--font-titulo);
+  --font-neon: var(--font-neon);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.75);
@@ -143,7 +192,10 @@
   --shadow-suave: var(--sombra-suave);
   --shadow-elevada: var(--sombra-elevada);
   --shadow-carnet: var(--sombra-carnet);
-  --shadow-bronce: var(--brillo-bronce);
+  --shadow-neon: var(--brillo-caja);
+  --shadow-neon-suave: var(--brillo-caja-suave);
+  --text-shadow-neon: var(--brillo-texto);
+  --text-shadow-neon-suave: var(--brillo-texto-suave);
 }
 
 @layer base {
@@ -158,7 +210,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01", "cv11";
+    font-feature-settings: "ss01";
   }
   h1,
   h2,
@@ -174,11 +226,11 @@
   }
   /* Foco visible y consistente en toda la app (teclado). */
   :focus-visible {
-    outline: 2px solid var(--bronce);
+    outline: 2px solid var(--oro-claro);
     outline-offset: 2px;
   }
   ::selection {
-    background: rgb(201 161 91 / 0.35);
+    background: rgb(201 162 39 / 0.35);
     color: var(--marfil);
   }
   input[type="number"]::-webkit-inner-spin-button,
@@ -191,7 +243,7 @@
 @layer utilities {
   /* Grano de papel/cuero: ruido SVG muy sutil sobre una superficie. */
   .textura-grano {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .8 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .7 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   /* Contenedor de página con gutter de 16px en mobile. */
   .contenedor {
@@ -203,12 +255,149 @@
   .numeros {
     font-variant-numeric: tabular-nums;
   }
+  /* Etiqueta / eyebrow: Instrument Sans condensada (wdth 85) en mayúsculas. */
+  .etiqueta {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    font-stretch: 85%;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
   /* Espacio para la barra inferior del panel + el área segura del iPhone. */
   .pb-nav-inferior {
     padding-bottom: calc(var(--alto-nav-inferior) + env(safe-area-inset-bottom) + 1.5rem);
   }
   .pb-seguro {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* ── Neón ────────────────────────────────────────────────────────────────
+     Brillo según tamaño: ≥ 28px .neon · 16–27px .neon-suave · < 16px sin brillo.
+     Los brillos son estáticos: nunca se transiciona text-shadow ni box-shadow. */
+  .neon {
+    color: var(--neon-nucleo);
+    text-shadow: var(--brillo-texto);
+  }
+  .neon-suave {
+    color: var(--neon);
+    text-shadow: var(--brillo-texto-suave);
+  }
+
+  /* Pared iluminada: la luz que el cartel derrama. Estática y barata. */
+  .pared-iluminada {
+    position: relative;
+    isolation: isolate;
+  }
+  .pared-iluminada::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--luz-pared);
+    pointer-events: none;
+  }
+  /* Pared de ladrillo trabado (hileras desplazadas), casi invisible. 0 KB. */
+  .textura-ladrillo {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M0 .5h48M0 24.5h48M.5 0v24M24.5 24v24' stroke='%23fff' stroke-opacity='.035' fill='none'/%3E%3C/svg%3E");
+  }
+
+  /* Filete: divisor doble de 1px en oro, el único ornamento clásico. */
+  .filete {
+    height: 4px;
+    border-block: 1px solid rgb(201 162 39 / 0.4);
+  }
+
+  /* Encendido del cartel: una sola vez, a saltos (sin interpolar). */
+  .encender {
+    animation: encender 1.1s steps(1, end) 0.3s both;
+  }
+  /* Si ya se encendió en esta sesión (ver EncendidoUnico), queda prendido. */
+  [data-encendido] .encender {
+    animation: none;
+  }
+
+  /* Sello lleno: disco de neón con la luz en un ::after (se anima su opacidad). */
+  .sello-lleno {
+    position: relative;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 50% 38%, var(--neon-nucleo), var(--neon) 62%);
+    color: var(--sobre-neon);
+  }
+  .sello-lleno::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--brillo-sello);
+    pointer-events: none;
+  }
+  .sello-nuevo::after {
+    animation: encender-opacidad 0.9s steps(1, end) var(--retardo-sello, 0s) both;
+  }
+
+  /* Línea de lectura del escáner (solo transform: no repinta). */
+  .barrido {
+    animation: barrido 2.2s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes encender {
+  0% {
+    color: var(--neon-apagado);
+    text-shadow: none;
+  }
+  10% {
+    color: var(--neon-nucleo);
+    text-shadow: var(--brillo-texto);
+  }
+  14% {
+    color: var(--neon-apagado);
+    text-shadow: none;
+  }
+  22% {
+    color: var(--neon-nucleo);
+    text-shadow: var(--brillo-texto);
+  }
+  26% {
+    color: var(--neon-apagado);
+    text-shadow: none;
+  }
+  40%,
+  100% {
+    color: var(--neon-nucleo);
+    text-shadow: var(--brillo-texto);
+  }
+}
+
+@keyframes encender-opacidad {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 0.15;
+  }
+  30% {
+    opacity: 1;
+  }
+  36% {
+    opacity: 0.3;
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes barrido {
+  from {
+    transform: translateY(-46%);
+  }
+  to {
+    transform: translateY(46%);
   }
 }
 
@@ -220,5 +409,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Sin movimiento, el cartel queda ENCENDIDO (nunca apagado) y la línea, fija. */
+  .encender,
+  .sello-nuevo::after,
+  .barrido {
+    animation: none !important;
   }
 }

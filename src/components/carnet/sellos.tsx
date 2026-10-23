@@ -2,10 +2,9 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Gift, Scissors } from "lucide-react";
-import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-// Cada sello cae con una inclinación distinta, como un sello de verdad.
+// La tijera de cada sello queda con una inclinación distinta, como estampada a mano.
 const INCLINACIONES = [-8, 5, -3, 9, -6, 4, -10, 7, -2, 6, -7, 3, -5, 8, -4, 10, -9, 2, -1, 5];
 
 // Tamaño MÁXIMO de cada sello: si no entran, se achican para no desbordar.
@@ -16,67 +15,40 @@ const TAMANOS = {
 } as const;
 
 const CAJA = "block aspect-square w-full";
-const ICONO = "size-[38%]";
+const ICONO = "size-[42%]";
+const NUMERO = {
+  sm: "text-[0.6875rem]",
+  md: "text-[0.8125rem]",
+  lg: "text-[0.8125rem] sm:text-[0.9375rem]",
+} as const;
 
 type Tamano = keyof typeof TAMANOS;
 
-/** Borde festoneado del sello (polígono con muescas). */
-function bordeFestoneado(puntas = 44, radioExt = 31, radioInt = 29.6) {
-  const puntos: string[] = [];
-  for (let i = 0; i < puntas * 2; i++) {
-    const r = i % 2 === 0 ? radioExt : radioInt;
-    const a = (Math.PI * i) / puntas;
-    puntos.push(`${(32 + r * Math.cos(a)).toFixed(2)},${(32 + r * Math.sin(a)).toFixed(2)}`);
-  }
-  return puntos.join(" ");
-}
-const BORDE = bordeFestoneado();
-
-/** Sello de bronce "estampado en caliente". */
-function SelloLleno() {
-  const id = useId();
+/** Sello ganado: un disco de neón encendido con la tijera. */
+function SelloLleno({
+  inclinacion,
+  retardoEncendido,
+}: {
+  inclinacion: number;
+  /** Si es un sello recién ganado: cuándo se enciende (a saltos, una vez). */
+  retardoEncendido: number | null;
+}) {
   return (
-    <span className={cn("relative", CAJA)}>
-      <svg
-        viewBox="0 0 64 64"
-        className="absolute inset-0 size-full drop-shadow-[0_2px_3px_rgb(0_0_0/0.55)]"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#f1d79b" />
-            <stop offset=".35" stopColor="#c9a15b" />
-            <stop offset=".7" stopColor="#8a6a33" />
-            <stop offset="1" stopColor="#d9b56e" />
-          </linearGradient>
-          <radialGradient id={`${id}-brillo`} cx=".3" cy=".25" r=".6">
-            <stop offset="0" stopColor="#fff6dc" stopOpacity=".55" />
-            <stop offset="1" stopColor="#fff6dc" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <polygon points={BORDE} fill={`url(#${id}-oro)`} />
-        <circle
-          cx="32"
-          cy="32"
-          r="24.5"
-          fill="none"
-          stroke="#5c4420"
-          strokeOpacity=".55"
-          strokeWidth="1.2"
-        />
-        <circle
-          cx="32"
-          cy="32"
-          r="21.5"
-          fill="none"
-          stroke="#fff3cf"
-          strokeOpacity=".35"
-          strokeWidth=".8"
-        />
-        <circle cx="32" cy="32" r="30" fill={`url(#${id}-brillo)`} />
-      </svg>
+    <span
+      className={cn(
+        CAJA,
+        "sello-lleno flex items-center justify-center",
+        retardoEncendido !== null && "sello-nuevo",
+      )}
+      style={
+        retardoEncendido !== null
+          ? ({ "--retardo-sello": `${retardoEncendido}s` } as React.CSSProperties)
+          : undefined
+      }
+    >
       <Scissors
-        className={cn("absolute inset-0 m-auto -rotate-45 text-[#4a3618]", ICONO)}
+        className={ICONO}
+        style={{ rotate: `${inclinacion - 45}deg` }}
         strokeWidth={2.25}
         aria-hidden
       />
@@ -84,19 +56,34 @@ function SelloLleno() {
   );
 }
 
-/** Lugar vacío: un hueco hundido en el cuero. */
-function SelloVacio({ premio }: { premio: boolean }) {
+/**
+ * Lugar sin sello. El siguiente a ganar va con borde oro y su número; los demás,
+ * punteados y apagados. El último muestra el premio.
+ */
+function SelloVacio({
+  numero,
+  estado,
+  tamano,
+}: {
+  numero: number;
+  estado: "siguiente" | "premio" | "vacio";
+  tamano: Tamano;
+}) {
   return (
     <span
       className={cn(
-        "flex items-center justify-center rounded-full border border-dashed",
-        "bg-black/25 shadow-[inset_0_2px_5px_rgb(0_0_0/0.65),0_1px_0_rgb(255_255_255/0.05)]",
-        premio ? "border-bronce/60 text-bronce/80" : "border-cuero text-transparent",
+        "numeros flex items-center justify-center rounded-full font-semibold",
+        estado === "siguiente"
+          ? "border-[1.5px] border-oro bg-oro/[0.06] text-oro"
+          : estado === "premio"
+            ? "border border-dashed border-oro/55 text-oro/85"
+            : "border border-dashed border-hierro-claro text-ceniza",
+        NUMERO[tamano],
         CAJA,
         "flex",
       )}
     >
-      {premio ? <Gift className={ICONO} aria-hidden /> : null}
+      {estado === "premio" ? <Gift className={ICONO} aria-hidden /> : numero}
     </span>
   );
 }
@@ -149,38 +136,45 @@ export function GrillaSellos({ total, llenos, nuevos = 0, tamano = "md", classNa
           <li key={i} className="relative" aria-hidden>
             {lleno ? (
               <>
-                {/* El hueco queda debajo: el sello "cae" encima. */}
+                {/* El hueco queda debajo: el sello "cae" encima y se enciende. */}
                 <span className="absolute inset-0">
-                  <SelloVacio premio={false} />
+                  <SelloVacio numero={i + 1} estado="vacio" tamano={tamano} />
                 </span>
                 <motion.span
                   className="relative block"
                   initial={
                     esNuevo && !reducirMovimiento
-                      ? { scale: 2.2, opacity: 0, rotate: inclinacion - 30, y: -18 }
+                      ? { scale: 1.9, opacity: 0, rotate: -20, y: -14 }
                       : false
                   }
-                  animate={{ scale: 1, opacity: 1, rotate: inclinacion, y: 0 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0, y: 0 }}
                   transition={
                     esNuevo
-                      ? { delay: retardo, type: "spring", stiffness: 520, damping: 18, mass: 0.9 }
+                      ? { delay: retardo, type: "spring", stiffness: 520, damping: 20, mass: 0.9 }
                       : { duration: 0 }
                   }
                 >
-                  <SelloLleno />
+                  <SelloLleno
+                    inclinacion={inclinacion}
+                    retardoEncendido={esNuevo && !reducirMovimiento ? retardo + 0.1 : null}
+                  />
                 </motion.span>
                 {esNuevo && !reducirMovimiento ? (
                   <motion.span
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-bronce-claro"
+                    className="pointer-events-none absolute inset-0 rounded-full border-2 border-neon/70"
                     initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: [0.9, 1.7], opacity: [0.9, 0] }}
+                    animate={{ scale: [0.9, 1.6], opacity: [0.8, 0] }}
                     transition={{ delay: retardo + 0.12, duration: 0.6, ease: "easeOut" }}
                   />
                 ) : null}
               </>
             ) : (
-              <SelloVacio premio={i === total - 1} />
+              <SelloVacio
+                numero={i + 1}
+                estado={i === total - 1 ? "premio" : i === llenos ? "siguiente" : "vacio"}
+                tamano={tamano}
+              />
             )}
           </li>
         );

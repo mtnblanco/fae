@@ -14,6 +14,26 @@ Registro de las decisiones que no estaban definidas en el pedido, con el motivo 
 
 - La barbería se llama **FaeBarberShop** (al principio se usó "La Navaja" como nombre provisorio). Se cambia en un solo lugar: `src/config/site.ts` (nombre, ciudad, sedes, Instagram, WhatsApp). Ciudad, sedes, Instagram y WhatsApp de turnos se tomaron del perfil @faebarbershop: La Plata, calle 16 e/ 40 y 41 y calle 45 e/ 28 y 29.
 
+### Identidad visual "Noche con un neón"
+
+Una barbería de noche con **un solo cartel encendido**. El neón (#FFE14D) es una lámpara, no un color de interfaz; el oro apagado (#C9A227) hace el trabajo de todos los días. Todo está en `src/app/globals.css` (tokens, brillos y utilidades); ningún componente define colores propios salvo los íconos de `next/og`, que no leen CSS (`COLORES_MARCA` en `src/lib/marca-svg.ts`).
+
+- **Logo: solo una "F" de neón + "FaeBarberShop"** (pedido del cliente: nada de emblemas, poste, aro ni navaja; el poste de barbero se eliminó de toda la app). La "F" va en Tilt Neon con brillo completo (núcleo casi blanco, el amarillo en el halo). El nombre va en la misma fuente, en marfil y **sin brillo**, para que la luz sea una sola y no empaste a 17 px. Dentro del carnet la "F" va "impresa" en oro (`luz="oro"`), porque ahí lo que brilla son los sellos.
+- **Íconos, favicon y OG**: la "F" se dibuja como SVG con la **línea central de la F de Tilt Neon** (dos tubos con terminales redondas), así no depende de la fuente. Se pinta como un cartel: halo difuso, tubo amarillo y núcleo claro (`svgF()` en `marca-svg.ts`; resvg de `next/og` sí aplica `feGaussianBlur`). El favicon es de 32 px (16 pt × 2) con tubo más grueso, F más grande y halo corto; se verificó legible a 16 y 32 px sobre pestaña oscura y clara. Para la OG se agregó `src/assets/TiltNeon-Regular.ttf` (instancia estática, subset latin, 47 KB, OFL).
+- **Una sola luz por pantalla (más el logo)**: landing → "suma." y "Ingresar a mi carnet"; login → "Ingresar"; carnet → sellos (y el carnet entero con halo suave cuando el premio está listo); ficha de cliente y escáner con cliente → "Sumar corte" (variante `neon`); escáner → el marco y la línea de lectura; inicio, caja, clientes y reglas → solo el logo (el panel es "la barbería con la luz apagada": oro y marfil).
+- **Brillo según tamaño** (`.neon` ≥ 28 px, `.neon-suave` 16–27 px, nada debajo). Todos los brillos son estáticos; no se transiciona `box-shadow` ni `text-shadow` (el botón usa `transition-[color,background-color,border-color,opacity,translate]`).
+- **Encendido**: la "F" de la landing se enciende a saltos una vez por sesión (`EncendidoUnico`: un script inline que lee `sessionStorage` antes de pintar). Los sellos nuevos se encienden con el mismo ritmo animando solo la `opacity` del `::after` que tiene la sombra. Con `prefers-reduced-motion` todo queda **encendido** y la línea del escáner, fija.
+- **Sellos**: disco de neón con núcleo claro y la tijera en `--sobre-neon`. El siguiente a ganar va con borde oro y su número; los demás punteados con número ceniza; el último muestra el regalo. El sello sigue "cayendo" (transform) al sumarse.
+- **Tipografías**: Gloock (títulos), Tilt Neon (solo la marca), Instrument Sans (UI, con eje `wdth` para las etiquetas condensadas `.etiqueta`). Los montos van en Instrument Sans semibold con cifras tabulares (el campo "Cobrás" y el total de caja, este en oro claro). Se quitó `cv11`, que Instrument Sans no tiene.
+- **Tokens**: vocabulario nuevo (`noche`, `ebano`, `hierro`, `borde-campo`, `marfil`, `arena`, `ceniza`, `oro`, `neon`, `exito`, `error`…). Se renombraron todos los usos, así que **no quedaron alias** de los nombres viejos (`bronce`, `nogal`, `cuero`, `espresso`, `tinta`, `salvia`). Los inputs usan `--borde-campo` (3.8:1 contra el fondo, WCAG 1.4.11); los bordes de tarjetas, `--hierro` (decorativo).
+- **Desvíos del manual**:
+  - Además de `neon` y `default` (oro), el botón tiene una variante **`oro`** (contorno oro, para secundarias con nombre propio: "Canjear premio", "Ingresar" del encabezado). `outline` queda **neutro** (borde hierro claro, texto marfil; el oro aparece al pasar el dedo): el manual pedía `outline` y `ghost` en oro, pero se usan en paginación, cancelar de diálogos, "Ver ficha", etc., y con todo en oro el oro deja de señalar algo.
+  - El botón de "Ingresar" del login también va en neón (es la acción principal de esa pantalla).
+  - Los sellos usan un brillo propio más corto (`--brillo-sello`, máx. 14 px) en lugar de `--brillo-caja` (40 px): son chicos, van de a 5–10 y el halo grande se pisaba entre sellos.
+  - En la landing, el carnet de muestra (con sus sellos) queda debajo del botón: en el primer pantallazo del celular se ven logo, "suma." y el botón, como pide el manual; los sellos aparecen al bajar.
+  - Se sacó el `backdrop-blur` de la barra superior y la inferior del panel y de los diálogos (fondo sólido al 95–97 % y velo negro al 65 %): es caro en celulares de gama baja y el manual pide no combinarlo con brillos.
+- **Pendiente con el cliente**: fotos reales del local o del cartel para el hero y la imagen OG.
+
 ## Login
 
 - **El usuario del cliente es el teléfono normalizado a solo dígitos.** Supabase Auth necesita un email, así que se genera `{telefono}@clientes.local` (dominio configurable con `CLIENTES_EMAIL_DOMAIN`). El cliente nunca lo ve.

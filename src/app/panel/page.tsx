@@ -99,7 +99,7 @@ export default async function PaginaPanel() {
         <h2 id="titulo-resumen" className="sr-only">
           Resumen
         </h2>
-        <dl className="grid grid-cols-1 divide-y divide-cuero rounded-xl border border-cuero bg-nogal sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <dl className="grid grid-cols-1 divide-y divide-hierro rounded-xl border border-hierro bg-ebano sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {indicadores.map((ind) => (
             <div
               key={ind.etiqueta}
@@ -127,7 +127,7 @@ export default async function PaginaPanel() {
             </h2>
             <Link
               href={RUTAS.caja}
-              className="-my-2.5 inline-flex shrink-0 items-center gap-0.5 rounded-md py-2.5 text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
+              className="-my-2.5 inline-flex shrink-0 items-center gap-0.5 rounded-md py-2.5 text-sm whitespace-nowrap text-oro underline-offset-4 hover:underline"
             >
               Ver caja
               <ChevronRight className="size-4" aria-hidden />
@@ -146,7 +146,7 @@ export default async function PaginaPanel() {
             {metricas.premios_pendientes > 0 ? (
               <Link
                 href={`${RUTAS.clientes}?filtro=con-premio`}
-                className="-my-2.5 shrink-0 rounded-md py-2.5 text-sm whitespace-nowrap text-bronce underline-offset-4 hover:underline"
+                className="-my-2.5 shrink-0 rounded-md py-2.5 text-sm whitespace-nowrap text-oro underline-offset-4 hover:underline"
               >
                 Ver todos ({metricas.premios_pendientes})
               </Link>
@@ -159,20 +159,20 @@ export default async function PaginaPanel() {
               descripcion="Cuando un cliente complete su tarjeta, va a aparecer acá para que no te olvides de canjearlo."
             />
           ) : (
-            <ul className="divide-y divide-cuero rounded-xl border border-cuero bg-nogal">
+            <ul className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
               {conPremio.map((c) => (
                 <li key={c.id}>
                   <Link
                     href={rutaCliente(c.id)}
-                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-nogal-claro"
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-ebano-claro"
                   >
                     <span className="flex min-w-0 items-center gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bronce/15 text-bronce">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-oro/15 text-oro">
                         <Gift className="size-4" aria-hidden />
                       </span>
                       <span className="truncate text-marfil">{c.nombre}</span>
                     </span>
-                    <span className="shrink-0 text-sm text-bronce">
+                    <span className="shrink-0 text-sm text-oro">
                       {c.premios_disponibles === 1
                         ? "1 premio"
                         : `${c.premios_disponibles} premios`}
@@ -195,19 +195,17 @@ export default async function PaginaPanel() {
               descripcion="Escaneá el carnet de un cliente para cargar su primer corte."
             />
           ) : (
-            <ul className="divide-y divide-cuero rounded-xl border border-cuero bg-nogal">
+            <ul className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
               {actividad.map((a) => (
                 <li key={`${a.tipo}-${a.id}`}>
                   <Link
                     href={rutaCliente(a.clienteId)}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-nogal-claro"
+                    className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-ebano-claro"
                   >
                     <span
                       className={cn(
                         "flex size-9 shrink-0 items-center justify-center rounded-full",
-                        a.tipo === "corte"
-                          ? "bg-nogal-claro text-arena"
-                          : "bg-bronce/15 text-bronce",
+                        a.tipo === "corte" ? "bg-ebano-claro text-arena" : "bg-oro/15 text-oro",
                       )}
                     >
                       {a.tipo === "corte" ? (

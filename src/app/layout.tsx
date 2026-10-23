@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Gloock, Instrument_Sans } from "next/font/google";
+import { Gloock, Instrument_Sans, Tilt_Neon } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { sitio, urlDelSitio } from "@/config/site";
 import "./globals.css";
@@ -14,6 +14,16 @@ const titulo = Gloock({
 const texto = Instrument_Sans({
   variable: "--font-texto",
   subsets: ["latin", "latin-ext"],
+  display: "swap",
+  // wdth 85: etiquetas condensadas en mayúsculas sin sumar otra familia.
+  axes: ["wdth"],
+});
+
+// Tilt Neon: solo para la marca (la "F" y el nombre). Está dibujada como un tubo.
+const neon = Tilt_Neon({
+  variable: "--font-neon",
+  weight: "400",
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -46,7 +56,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#15110e",
+  themeColor: "#12100c",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -55,7 +65,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-AR" className={`dark ${titulo.variable} ${texto.variable}`}>
+    <html
+      lang="es-AR"
+      suppressHydrationWarning
+      className={`dark ${titulo.variable} ${texto.variable} ${neon.variable}`}
+    >
       <body className="min-h-dvh">
         {children}
         <Toaster position="top-center" closeButton richColors={false} />

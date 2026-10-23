@@ -96,7 +96,7 @@ export function FormularioRegla({ cortes, premio }: { cortes: number; premio: st
         {cambioN ? (
           <p
             role="note"
-            className="rounded-lg border border-bronce/30 bg-bronce/10 px-4 py-3 text-sm leading-relaxed text-bronce-claro"
+            className="rounded-lg border border-oro/30 bg-oro/10 px-4 py-3 text-sm leading-relaxed text-oro-claro"
           >
             Al cambiar la cantidad de cortes, el progreso de cada cliente se recalcula con todo su
             historial. Algunos pueden ganar un premio en el momento, o tener que esperar un poco
@@ -111,7 +111,7 @@ export function FormularioRegla({ cortes, premio }: { cortes: number; premio: st
 
       <aside
         aria-label="Vista previa"
-        className="textura-grano rounded-2xl border border-cuero bg-nogal p-5"
+        className="textura-grano rounded-2xl border border-hierro bg-ebano p-5"
       >
         <p className="text-sm text-arena">Así se ve en el carnet</p>
         <GrillaSellos total={n} llenos={Math.max(0, n - 1)} className="mt-4" />

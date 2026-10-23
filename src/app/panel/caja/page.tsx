@@ -70,8 +70,8 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
                 className={cn(
                   "inline-flex h-10 items-center rounded-full border px-4 text-sm whitespace-nowrap transition-colors",
                   periodo === p
-                    ? "border-bronce bg-bronce/15 text-bronce-claro"
-                    : "border-cuero text-arena hover:border-arena/50 hover:text-marfil",
+                    ? "border-oro bg-oro/15 text-oro-claro"
+                    : "border-hierro-claro text-arena hover:border-arena/60 hover:text-marfil",
                 )}
               >
                 {ETIQUETAS_PERIODO[p]}
@@ -82,7 +82,7 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
       </nav>
 
       <section aria-labelledby="titulo-resumen-caja">
-        <h2 id="titulo-resumen-caja" className="mb-3 text-sm text-arena">
+        <h2 id="titulo-resumen-caja" className="mb-3 font-sans text-sm text-arena">
           {textoRango}
         </h2>
         <ResumenCaja filas={filas} />
@@ -99,14 +99,14 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
             descripcion="Cuando sumes cortes, van a aparecer acá con lo que pagó cada cliente."
           />
         ) : (
-          <ul className="divide-y divide-cuero rounded-xl border border-cuero bg-nogal">
+          <ul className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
             {listado.cortes.map((c) => {
               const barbero = c.registrado_por ? barberos[c.registrado_por] : undefined;
               return (
                 <li key={c.id}>
                   <Link
                     href={rutaCliente(c.clienteId)}
-                    className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-nogal-claro"
+                    className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-ebano-claro"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-marfil">{c.clienteNombre}</span>

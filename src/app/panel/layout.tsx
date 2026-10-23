@@ -20,12 +20,12 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
       <SaltarAlContenido />
 
       {/* Lateral (desktop) */}
-      <aside className="sticky top-0 hidden h-dvh flex-col self-start border-r border-cuero bg-nogal/60 px-4 py-6 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col self-start border-r border-hierro bg-ebano/60 px-4 py-6 lg:flex">
         <Logo href={RUTAS.panel} tamano="sm" className="px-2" />
         <div className="mt-8 flex-1">
           <NavLateral esDueno={perfil.es_dueno} />
         </div>
-        <div className="border-t border-cuero pt-4">
+        <div className="border-t border-hierro pt-4">
           <p className="truncate px-3 text-sm text-marfil">{perfil.nombre}</p>
           <p className="px-3 text-[0.8125rem] text-arena">
             {perfil.es_dueno ? "Dueño" : "Barbero"}
@@ -42,7 +42,7 @@ export default async function LayoutPanel({ children }: LayoutProps<"/panel">) {
 
       <div className="min-w-0">
         {/* Barra superior (mobile) */}
-        <header className="sticky top-0 z-30 border-b border-cuero bg-espresso/90 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-hierro bg-noche/95 lg:hidden">
           <div className="contenedor flex h-14 items-center justify-between">
             <Logo href={RUTAS.panel} tamano="sm" />
             <div className="flex items-center">

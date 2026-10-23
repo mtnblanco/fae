@@ -43,7 +43,7 @@ export function Campo({ etiqueta, errores, ayuda, className, children, accion }:
         <p
           id={idError}
           role="alert"
-          className="text-[0.8125rem] leading-snug font-medium text-tinta-clara"
+          className="text-[0.8125rem] leading-snug font-medium text-error"
         >
           {error}
         </p>

@@ -49,7 +49,7 @@ export default async function PaginaDescuentos() {
           {descuentos.map((d) => {
             const estado = estadoDescuento(d, hoy);
             return (
-              <li key={d.id} className="flex flex-col rounded-xl border border-cuero bg-nogal p-4">
+              <li key={d.id} className="flex flex-col rounded-xl border border-hierro bg-ebano p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-marfil">{d.comercio}</p>
@@ -57,9 +57,9 @@ export default async function PaginaDescuentos() {
                       className={cn(
                         "mt-1 inline-flex items-center gap-1.5 text-[0.8125rem]",
                         estado === "vigente"
-                          ? "text-salvia"
+                          ? "text-exito"
                           : estado === "programado"
-                            ? "text-bronce"
+                            ? "text-oro"
                             : "text-arena",
                       )}
                     >

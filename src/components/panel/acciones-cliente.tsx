@@ -82,7 +82,7 @@ export function AccionesCliente({ cliente }: Props) {
 
   if (p.necesarios === 0) {
     return (
-      <p className="rounded-xl border border-cuero bg-nogal p-5 text-sm text-arena">
+      <p className="rounded-xl border border-hierro bg-ebano p-5 text-sm text-arena">
         No hay una regla de premios configurada. Configurala en la sección Premios.
       </p>
     );
@@ -91,7 +91,7 @@ export function AccionesCliente({ cliente }: Props) {
   return (
     <section aria-labelledby="titulo-tarjeta" className="grid grid-cols-1 gap-4">
       <Celebracion disparo={festejo} />
-      <div className="textura-grano rounded-2xl border border-cuero bg-nogal p-5 shadow-suave sm:p-6">
+      <div className="textura-grano rounded-2xl border border-hierro bg-ebano p-5 shadow-suave sm:p-6">
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="titulo-tarjeta" className="text-xl">
             Tarjeta actual
@@ -107,7 +107,7 @@ export function AccionesCliente({ cliente }: Props) {
             : `Le ${p.faltan === 1 ? "falta" : "faltan"} ${textoCortes(p.faltan)} para: ${cliente.descripcion_premio}.`}
         </p>
         {p.premiosDisponibles > 0 ? (
-          <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-bronce/15 px-3 py-1.5 text-sm font-medium text-bronce-claro">
+          <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-oro/40 bg-oro/10 px-3 py-1.5 text-sm font-medium text-oro-claro">
             <Gift className="size-4" aria-hidden />
             {p.premiosDisponibles === 1
               ? "Tiene 1 premio para canjear"
@@ -127,6 +127,7 @@ export function AccionesCliente({ cliente }: Props) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button
           size="xl"
+          variant="neon"
           onClick={alSumar}
           disabled={sumar.pendiente}
           aria-busy={sumar.pendiente || undefined}
@@ -144,9 +145,8 @@ export function AccionesCliente({ cliente }: Props) {
           disparador={
             <Button
               size="xl"
-              variant="outline"
+              variant="oro"
               disabled={p.premiosDisponibles === 0 || canjear.pendiente}
-              className="border-bronce/50 text-bronce-claro hover:text-bronce-claro"
             >
               {canjear.pendiente ? (
                 <Loader2 className="animate-spin" aria-hidden />

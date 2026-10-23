@@ -18,7 +18,7 @@ export function Iniciales({ nombre, className }: { nombre: string; className?: s
     <span
       aria-hidden
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-full border border-cuero bg-nogal-claro font-titulo text-[0.9375rem] text-bronce-claro",
+        "flex size-10 shrink-0 items-center justify-center rounded-full border border-hierro bg-ebano-claro font-titulo text-[0.9375rem] text-oro-claro",
         className,
       )}
     >
@@ -36,7 +36,7 @@ function MiniProgreso({ llenos, total }: { llenos: number; total: number }) {
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
-            className={cn("h-1.5 w-2.5 rounded-full", i < llenos ? "bg-bronce" : "bg-cuero")}
+            className={cn("h-1.5 w-2.5 rounded-full", i < llenos ? "bg-oro" : "bg-hierro")}
           />
         ))}
       </span>
@@ -53,7 +53,7 @@ export function FilaCliente({ cliente }: { cliente: ClienteListado }) {
     <li>
       <Link
         href={rutaCliente(cliente.id)}
-        className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-nogal-claro focus-visible:bg-nogal-claro"
+        className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-ebano-claro focus-visible:bg-ebano-claro"
       >
         <Iniciales nombre={cliente.nombre} />
         <span className="min-w-0 flex-1">
@@ -65,7 +65,7 @@ export function FilaCliente({ cliente }: { cliente: ClienteListado }) {
         <span className="flex shrink-0 flex-col items-end gap-1">
           <MiniProgreso llenos={p.mostrados} total={p.necesarios} />
           {p.premiosDisponibles > 0 ? (
-            <span className="inline-flex items-center gap-1 text-[0.75rem] font-medium text-bronce">
+            <span className="inline-flex items-center gap-1 text-[0.75rem] font-medium text-oro">
               <Gift className="size-3" aria-hidden />
               {p.premiosDisponibles === 1 ? "Premio" : `${p.premiosDisponibles} premios`}
             </span>
@@ -75,7 +75,7 @@ export function FilaCliente({ cliente }: { cliente: ClienteListado }) {
             </span>
           )}
         </span>
-        <ChevronRight className="size-4 shrink-0 text-cuero" aria-hidden />
+        <ChevronRight className="size-4 shrink-0 text-hierro" aria-hidden />
       </Link>
     </li>
   );

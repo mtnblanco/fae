@@ -22,7 +22,7 @@ export function MarcoAuth({
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(201_161_91/0.14),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(255_190_30/0.08),transparent)]"
       />
       <header className="contenedor flex h-16 items-center">
         <Logo href={RUTAS.inicio} tamano="sm" />
@@ -37,7 +37,7 @@ export function MarcoAuth({
             <p className="mt-3 text-[0.9375rem] leading-relaxed text-arena">{descripcion}</p>
           ) : null}
           <div className="mt-8">{children}</div>
-          {pie ? <div className="mt-8 border-t border-cuero pt-6">{pie}</div> : null}
+          {pie ? <div className="mt-8 border-t border-hierro pt-6">{pie}</div> : null}
         </div>
       </main>
     </div>

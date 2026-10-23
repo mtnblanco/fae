@@ -17,7 +17,7 @@ export default function ErrorPanel({
     console.error(error);
   }, [error]);
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed border-cuero px-6 py-12 text-center">
+    <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed border-hierro px-6 py-12 text-center">
       <p className="font-titulo text-2xl">No pudimos cargar esta sección</p>
       <p className="mt-2 text-sm text-arena">
         Puede ser la conexión. Probá de nuevo en unos segundos.

@@ -30,7 +30,7 @@ export default async function PaginaCarnet() {
     type: "svg",
     margin: 0,
     errorCorrectionLevel: "M",
-    color: { dark: "#15110e", light: "#00000000" },
+    color: { dark: "#12100c", light: "#00000000" },
   });
   const nombre = perfil.nombre.split(" ")[0] ?? perfil.nombre;
   // eslint-disable-next-line react-hooks/purity -- render del servidor: la hora del request es intencional.
@@ -56,8 +56,8 @@ export default async function PaginaCarnet() {
           Tus premios
         </h2>
         {cliente.premios_disponibles > 0 ? (
-          <div className="flex gap-4 rounded-xl border border-bronce/40 bg-bronce/10 p-5 shadow-bronce">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-bronce text-primary-foreground">
+          <div className="flex gap-4 rounded-xl border border-oro/40 bg-oro/10 p-5">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-oro text-primary-foreground">
               <Gift className="size-5" aria-hidden />
             </span>
             <div>
@@ -101,16 +101,16 @@ export default async function PaginaCarnet() {
         ) : (
           <ul className="grid grid-cols-1 gap-3">
             {descuentos.map((d) => (
-              <li key={d.id} className="rounded-xl border border-cuero bg-nogal p-4">
+              <li key={d.id} className="rounded-xl border border-hierro bg-ebano p-4">
                 <div className="flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-nogal-claro text-bronce">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-ebano-claro text-oro">
                     <Store className="size-[1.125rem]" aria-hidden />
                   </span>
                   <div className="min-w-0">
                     <p className="font-medium text-marfil">{d.comercio}</p>
                     <p className="mt-0.5 text-sm leading-relaxed text-arena">{d.descripcion}</p>
                     {d.vigente_hasta ? (
-                      <p className="mt-2 text-[0.8125rem] text-bronce">
+                      <p className="mt-2 text-[0.8125rem] text-oro">
                         Hasta el {formatearDia(d.vigente_hasta)}
                       </p>
                     ) : null}
@@ -144,7 +144,7 @@ export default async function PaginaCarnet() {
         )}
       </section>
 
-      <footer className="border-t border-cuero pt-6 text-center">
+      <footer className="border-t border-hierro pt-6 text-center">
         <Link
           href={RUTAS.cambiarPassword}
           className="rounded-md text-sm text-arena underline-offset-4 transition-colors hover:text-marfil hover:underline"

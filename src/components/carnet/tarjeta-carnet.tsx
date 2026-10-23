@@ -3,9 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { QrCode, RotateCcw } from "lucide-react";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { Poste } from "@/components/marca/poste";
+import { Logo } from "@/components/marca/logo";
 import { Button } from "@/components/ui/button";
-import { sitio } from "@/config/site";
 import { calcularProgreso, textoCortes } from "@/lib/progreso";
 import { cn } from "@/lib/utils";
 import { Celebracion } from "./celebracion";
@@ -50,29 +49,36 @@ function Cara({
   children,
   dorso = false,
   oculta,
+  encendida = false,
 }: {
   children: React.ReactNode;
   dorso?: boolean;
   oculta: boolean;
+  /** Premio listo: el carnet entero se enciende (halo suave, sin animar la sombra). */
+  encendida?: boolean;
 }) {
   return (
     <div
       inert={oculta}
       className={cn(
-        "textura-grano overflow-hidden rounded-[1.375rem] bg-nogal shadow-carnet [backface-visibility:hidden]",
+        "textura-grano overflow-hidden rounded-[1.375rem] bg-ebano [backface-visibility:hidden]",
+        encendida ? "shadow-[var(--brillo-caja-suave),var(--sombra-carnet)]" : "shadow-carnet",
         // El frente define el alto (crece si hay muchos sellos); el dorso lo copia.
         dorso ? "absolute inset-0" : "relative aspect-[1/1.18] min-[400px]:aspect-[1/1.05]",
       )}
       style={dorso ? { transform: "rotateY(180deg)" } : undefined}
     >
-      {/* Brillo del cuero y filete de bronce */}
+      {/* Luz cálida que llega de arriba y filete de oro */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,rgb(226_194_127/0.13),transparent_55%),radial-gradient(90%_70%_at_100%_100%,rgb(0_0_0/0.45),transparent_60%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(110%_70%_at_15%_0%,rgb(255_190_30/0.08),transparent_60%),radial-gradient(90%_70%_at_100%_100%,rgb(0_0_0/0.45),transparent_60%)]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-2.5 rounded-[1rem] border border-bronce/35"
+        className={cn(
+          "pointer-events-none absolute inset-2.5 rounded-[1rem] border",
+          encendida ? "border-neon/40" : "border-oro/30",
+        )}
       />
       <div className="relative flex h-full flex-col p-6">{children}</div>
     </div>
@@ -143,12 +149,9 @@ export function TarjetaCarnet({ cliente, socioDesde, numeroSocio, qrSvg }: Props
           transition={reducir ? { duration: 0 } : { type: "spring", stiffness: 140, damping: 20 }}
         >
           {/* Frente: sellos */}
-          <Cara oculta={dadaVuelta}>
+          <Cara oculta={dadaVuelta} encendida={p.faltan === 0 && p.necesarios > 0}>
             <div className="flex items-start justify-between gap-4">
-              <span className="flex items-center gap-2">
-                <Poste className="h-7" />
-                <span className="font-titulo text-lg leading-none text-marfil">{sitio.nombre}</span>
-              </span>
+              <Logo tamano="sm" luz="oro" />
               <span className="text-right text-[0.6875rem] leading-tight text-arena">
                 Socio n.º <span className="numeros text-marfil">{numeroSocio}</span>
                 <br />
@@ -171,7 +174,7 @@ export function TarjetaCarnet({ cliente, socioDesde, numeroSocio, qrSvg }: Props
                 />
                 <p className="mt-4 text-sm leading-snug text-arena" aria-live="polite">
                   {p.faltan === 0 ? (
-                    <span className="text-bronce-claro">
+                    <span className="font-medium text-oro-claro">
                       ¡Tarjeta completa! Tu premio te espera.
                     </span>
                   ) : (

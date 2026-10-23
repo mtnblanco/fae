@@ -14,11 +14,11 @@ export function EstadoVacio({ icono: Icono, titulo, descripcion, accion, classNa
   return (
     <div
       className={cn(
-        "flex flex-col items-center rounded-xl border border-dashed border-cuero px-6 py-10 text-center",
+        "flex flex-col items-center rounded-xl border border-dashed border-hierro px-6 py-10 text-center",
         className,
       )}
     >
-      <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-nogal-claro text-bronce">
+      <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-ebano-claro text-oro">
         <Icono className="size-5" aria-hidden />
       </span>
       <p className="font-titulo text-xl text-marfil">{titulo}</p>

@@ -27,7 +27,7 @@ export default async function PaginaReglas() {
           <h2 id="titulo-historial-reglas" className="text-2xl">
             Reglas anteriores
           </h2>
-          <ul className="mt-4 divide-y divide-cuero rounded-xl border border-cuero bg-nogal">
+          <ul className="mt-4 divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
             {historial.map((r, i) => {
               // Cada regla terminó cuando se creó la siguiente (la más nueva va primero).
               const fin = i === 0 ? activa?.created_at : historial[i - 1]?.created_at;

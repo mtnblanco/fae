@@ -56,8 +56,8 @@ export function TarjetaCredenciales({ tipo, nombre, telefono, password }: Props)
   }
 
   return (
-    <div className="textura-grano overflow-hidden rounded-xl border border-bronce/40 bg-nogal shadow-bronce">
-      <div className="border-b border-cuero px-5 py-4">
+    <div className="textura-grano overflow-hidden rounded-xl border border-oro/40 bg-ebano">
+      <div className="border-b border-hierro px-5 py-4">
         <p className="font-titulo text-xl text-marfil">
           {tipo === "alta" ? "Datos de acceso" : "Contraseña nueva"}
         </p>
@@ -77,12 +77,12 @@ export function TarjetaCredenciales({ tipo, nombre, telefono, password }: Props)
           <dt className="text-[0.8125rem] text-arena">
             Contraseña {tipo === "reseteo" ? "temporal" : "inicial"}
           </dt>
-          <dd className="numeros mt-0.5 font-mono text-2xl tracking-[0.12em] text-bronce-claro select-all">
+          <dd className="numeros mt-0.5 font-mono text-2xl tracking-[0.12em] text-oro-claro select-all">
             {password}
           </dd>
         </div>
       </dl>
-      <div className="grid grid-cols-1 gap-2 border-t border-cuero bg-espresso/40 p-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 border-t border-hierro bg-noche/40 p-4 sm:grid-cols-2">
         <Button type="button" variant="outline" size="lg" onClick={copiar}>
           {copiado ? <Check aria-hidden /> : <Copy aria-hidden />}
           {copiado ? "Copiado" : "Copiar"}

@@ -13,11 +13,11 @@ export default function CargandoClientes() {
           <Skeleton key={i} className="h-9 w-24 rounded-full" />
         ))}
       </div>
-      <div className="mt-2 overflow-hidden rounded-xl border border-cuero">
+      <div className="mt-2 overflow-hidden rounded-xl border border-hierro">
         {Array.from({ length: 8 }, (_, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 border-b border-cuero px-4 py-3.5 last:border-0"
+            className="flex items-center gap-3 border-b border-hierro px-4 py-3.5 last:border-0"
           >
             <Skeleton className="size-10 rounded-full" />
             <div className="grid flex-1 grid-cols-1 gap-2">

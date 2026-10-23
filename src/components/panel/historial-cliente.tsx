@@ -73,7 +73,7 @@ export function HistorialCliente({
   let indiceCorte = 0;
 
   return (
-    <ol className="divide-y divide-cuero rounded-xl border border-cuero bg-nogal">
+    <ol className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
       {movimientos.map((m) => {
         const numero =
           m.tipo === "corte" && totalCortes !== undefined ? totalCortes - indiceCorte++ : null;
@@ -96,7 +96,7 @@ export function HistorialCliente({
             <span
               className={cn(
                 "flex size-9 shrink-0 items-center justify-center rounded-full",
-                m.tipo === "corte" ? "bg-nogal-claro text-arena" : "bg-bronce/15 text-bronce",
+                m.tipo === "corte" ? "bg-ebano-claro text-arena" : "bg-oro/15 text-oro",
               )}
             >
               {m.tipo === "corte" ? (

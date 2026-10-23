@@ -56,11 +56,11 @@ export function NavLateral({ esDueno }: { esDueno: boolean }) {
             className={cn(
               "flex h-11 items-center gap-3 rounded-lg px-3 text-[0.9375rem] transition-colors",
               esActivo
-                ? "bg-nogal-claro text-marfil"
-                : "text-arena hover:bg-nogal-claro/60 hover:text-marfil",
+                ? "bg-ebano-claro text-oro-claro"
+                : "text-arena hover:bg-ebano-claro/60 hover:text-marfil",
             )}
           >
-            <Icono className={cn("size-[1.125rem]", esActivo && "text-bronce")} aria-hidden />
+            <Icono className="size-[1.125rem]" strokeWidth={1.75} aria-hidden />
             {item.etiqueta}
           </Link>
         );
@@ -76,7 +76,7 @@ export function NavInferior({ esDueno }: { esDueno: boolean }) {
   return (
     <nav
       aria-label="Secciones del panel"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-cuero bg-espresso/95 backdrop-blur-md lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-hierro bg-noche/[0.97] lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul
@@ -95,20 +95,24 @@ export function NavInferior({ esDueno }: { esDueno: boolean }) {
                 href={item.href}
                 aria-current={esActivo ? "page" : undefined}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors",
-                  esActivo ? "text-marfil" : "text-arena hover:text-marfil",
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium transition-colors",
+                  esActivo ? "text-oro" : "text-arena hover:text-marfil",
                 )}
               >
+                {esActivo && !central ? (
+                  <span aria-hidden className="absolute top-0 h-0.5 w-7 rounded-b-full bg-oro" />
+                ) : null}
                 {central ? (
                   <span
                     className={cn(
-                      "-mt-6 mb-0.5 flex size-14 items-center justify-center rounded-full border-4 border-espresso bg-bronce text-primary-foreground shadow-bronce transition-transform active:scale-95",
+                      "-mt-6 mb-0.5 flex size-14 items-center justify-center rounded-full border-4 border-noche bg-oro text-sobre-neon shadow-suave transition-transform active:scale-95",
+                      esActivo && "bg-oro-claro",
                     )}
                   >
                     <Icono className="size-6" aria-hidden />
                   </span>
                 ) : (
-                  <Icono className={cn("size-[1.375rem]", esActivo && "text-bronce")} aria-hidden />
+                  <Icono className="size-[1.375rem]" strokeWidth={1.75} aria-hidden />
                 )}
                 <span>{item.etiqueta}</span>
               </Link>

@@ -98,7 +98,7 @@ function Formulario({
           )}
         </Campo>
       </div>
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-cuero px-4 py-3">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-hierro px-4 py-3">
         <Label htmlFor="descuento-activo" className="grid grid-cols-1 gap-0.5">
           <span className="text-marfil">Activo</span>
           <span className="text-[0.8125rem] font-normal text-arena">

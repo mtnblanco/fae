@@ -79,7 +79,7 @@ export function DialogoPrecio({ cliente }: { cliente: Cliente }) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="numeros inline-flex h-9 items-center gap-1.5 rounded-full border border-cuero px-3.5 text-sm text-marfil transition-colors hover:bg-nogal-claro"
+          className="numeros inline-flex h-9 items-center gap-1.5 rounded-full border border-hierro px-3.5 text-sm text-marfil transition-colors hover:bg-ebano-claro"
           aria-label={`Editar precio habitual (${
             cliente.precio_habitual === null
               ? "sin precio"

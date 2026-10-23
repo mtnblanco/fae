@@ -3,7 +3,8 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-const COLORES = ["#e2c27f", "#c9a15b", "#f1d79b", "#8a6a33", "#eee6d8"];
+// neón, oro, oro claro, núcleo del neón y marfil (ver globals.css).
+const COLORES = ["#ffe14d", "#c9a227", "#ddb93f", "#fff7cc", "#f1ebdd"];
 const CANTIDAD = 36;
 
 // Pseudoaleatorio determinístico: misma ráfaga en cada render (sin Math.random en render).
@@ -13,7 +14,7 @@ function semilla(i: number, n: number) {
 }
 
 /**
- * Ráfaga de "virutas" de bronce para festejar un premio. Se dispara cada vez
+ * Ráfaga de "virutas" de neón y oro para festejar un premio. Se dispara cada vez
  * que cambia `disparo` (un número que se incrementa) y se va sola.
  */
 export function Celebracion({ disparo }: { disparo: number }) {
