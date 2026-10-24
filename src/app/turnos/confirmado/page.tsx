@@ -42,7 +42,7 @@ export default async function PaginaTurnoConfirmado() {
         </Button>
       </div>
       <p className="text-sm leading-relaxed text-arena">
-        Podés cancelarlo desde tu carnet hasta 3 horas antes. Después, avisanos por WhatsApp.
+        Podés cancelarlo desde tu carnet hasta 6 horas antes. Después, avisanos por WhatsApp.
       </p>
     </div>
   );

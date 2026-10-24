@@ -111,7 +111,7 @@ export default async function PaginaTurnos() {
           )}
           <p className="text-sm leading-relaxed text-arena">
             Atendemos en {sitio.sedes[0] ?? sitio.ciudad}, {sitio.ciudad}. Podés cancelar desde la
-            web hasta 3 horas antes.
+            web hasta 6 horas antes.
           </p>
         </>
       )}

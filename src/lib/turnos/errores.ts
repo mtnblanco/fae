@@ -12,7 +12,7 @@ const MENSAJES_TURNOS: Record<string, string> = {
   turno_inexistente: "Ese turno ya no existe.",
   turno_atendido: "Ese turno ya fue atendido.",
   cancelacion_tardia:
-    "Faltan menos de 3 horas para tu turno: avisanos por WhatsApp para cancelarlo.",
+    "Faltan 6 horas o menos para tu turno: avisanos por WhatsApp para cancelarlo.",
   franjas_superpuestas: "Hay franjas que se pisan en el mismo día. Revisalas.",
   franjas_invalidas: "Revisá los horarios: en cada franja tiene que entrar al menos un turno.",
   fecha_invalida: "Elegí una fecha de hoy en adelante.",

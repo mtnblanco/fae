@@ -172,7 +172,7 @@ export function SelectorHorario({
             );
           })}
           <p className="text-[0.8125rem] text-arena">
-            {sede}. Podés cancelar desde la web hasta 3 horas antes.
+            {sede}. Podés cancelar desde la web hasta 6 horas antes.
           </p>
         </div>
       )}

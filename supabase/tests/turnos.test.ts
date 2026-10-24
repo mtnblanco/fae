@@ -403,7 +403,7 @@ describe("reservar (cliente)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 describe("cancelar", () => {
-  it("el cliente cancela con más de 3 horas y el horario se libera", async () => {
+  it("el cliente cancela con más de 6 horas y el horario se libera", async () => {
     const t = await reservar(SANTIAGO, EMPLEADO, ar(VIERNES, "10:00"));
     expect((await cancelar(SANTIAGO, t.id)).estado).toBe("cancelado");
     expect(await libres(EMPLEADO, VIERNES)).toContain(ar(VIERNES, "10:00"));
@@ -411,7 +411,7 @@ describe("cancelar", () => {
     expect((await cancelar(SANTIAGO, t.id)).estado).toBe("cancelado");
   });
 
-  it("con menos de 3 horas el cliente no puede: 'cancelacion_tardia'", async () => {
+  it("con 6 horas o menos el cliente no puede: 'cancelacion_tardia'", async () => {
     const turno = await fila<{ id: string }>(
       `select id from turnos where cliente_id = $1 and estado = 'reservado'`,
       [MARTIN],
@@ -766,5 +766,29 @@ describe("corte y turno", () => {
     ]);
     await conRol(como(DUENO), () => db.query(`select registrar_corte($1)`, [NICOLAS]));
     await esperarError(cancelar(DUENO, "a3000000-0000-4000-8000-000000000001"), /turno_atendido/);
+  });
+
+  it("el límite es de 6 horas justas: a las 18:00 ya no, a las 18:30 sí (son las 12:00)", async () => {
+    await db.query(
+      `insert into turnos (id, barbero_id, cliente_id, inicio, fin) values
+         ('a4000000-0000-4000-8000-000000000001', $1, $2, $3, $4),
+         ('a4000000-0000-4000-8000-000000000002', $1, $5, $4, $6)`,
+      [DUENO, SANTIAGO, ar(HOY, "18:00"), ar(HOY, "18:30"), NICOLAS, ar(HOY, "19:00")],
+    );
+    await esperarError(
+      cancelar(SANTIAGO, "a4000000-0000-4000-8000-000000000001"),
+      /cancelacion_tardia/,
+    );
+    const santiago = await conRol(como(SANTIAGO), () =>
+      fila<{ puede_cancelar: boolean }>(`select * from mi_proximo_turno()`),
+    );
+    expect(santiago.puede_cancelar).toBe(false);
+    const nicolas = await conRol(como(NICOLAS), () =>
+      fila<{ puede_cancelar: boolean }>(`select * from mi_proximo_turno()`),
+    );
+    expect(nicolas.puede_cancelar).toBe(true);
+    expect((await cancelar(NICOLAS, "a4000000-0000-4000-8000-000000000002")).estado).toBe(
+      "cancelado",
+    );
   });
 });

@@ -66,7 +66,7 @@ export async function reservarTurno(datos: {
   return { ok: true, id: data.id };
 }
 
-/** El cliente cancela su turno (hasta 3 horas antes). */
+/** El cliente cancela su turno (hasta 6 horas antes). */
 export async function cancelarMiTurno(turnoId: string): Promise<Resultado> {
   const { perfil } = await requireCliente();
   if (!z.uuid().safeParse(turnoId).success) return fallo("Ese turno ya no existe.");

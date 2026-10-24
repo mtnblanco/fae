@@ -8,7 +8,7 @@ export const TURNOS = {
   /** Días que se ofrecen: hoy y los 13 siguientes. */
   diasVentana: 14,
   /** El cliente puede cancelar desde la web hasta estas horas antes. */
-  cancelarHastaHoras: 3,
+  cancelarHastaHoras: 6,
   /** Duraciones posibles de un turno, por franja. */
   duraciones: [30, 60] as const,
 } as const;

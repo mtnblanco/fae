@@ -96,11 +96,11 @@ export function TarjetaMiTurno({
       </div>
       {puedeCancelar ? (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-arena">
-          Podés cancelarlo desde acá hasta 3 horas antes.
+          Podés cancelarlo desde acá hasta 6 horas antes.
         </p>
       ) : (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-arena">
-          Faltan menos de 3 horas: si no podés venir, avisanos por WhatsApp.
+          Faltan 6 horas o menos: si no podés venir, avisanos por WhatsApp.
         </p>
       )}
     </section>
