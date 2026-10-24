@@ -2,7 +2,7 @@ import { Gift, History, Scissors } from "lucide-react";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { formatearPesos } from "@/lib/dinero";
 import { formatearFechaCorta, formatearFechaHora } from "@/lib/fechas";
-import { type Barbero, puedeDeshacerCorte } from "@/lib/permisos";
+import { type Barbero, PLAZO_DESHACER_MS, venceDeshacer } from "@/lib/permisos";
 import { cn } from "@/lib/utils";
 import { BotonDeshacer } from "./boton-deshacer";
 
@@ -16,8 +16,6 @@ type CorteMovimiento = {
 type Movimiento =
   | ({ tipo: "corte" } & CorteMovimiento)
   | { tipo: "canje"; id: string; fecha: string; premio: string };
-
-const PLAZO_MS = 10 * 60 * 1000;
 
 /** Datos extra que muestra el panel (el carnet del cliente no los usa). */
 type DetallePanel = {
@@ -77,13 +75,16 @@ export function HistorialCliente({
       {movimientos.map((m) => {
         const numero =
           m.tipo === "corte" && totalCortes !== undefined ? totalCortes - indiceCorte++ : null;
-        const reciente = m.tipo === "corte" && ahora - new Date(m.fecha).getTime() < PLAZO_MS;
+        const reciente =
+          m.tipo === "corte" && ahora - new Date(m.fecha).getTime() < PLAZO_DESHACER_MS;
         const fecha = reciente ? formatearFechaHora(m.fecha) : formatearFechaCorta(m.fecha);
-        const deshacer =
-          panel &&
-          m.tipo === "corte" &&
-          reciente &&
-          puedeDeshacerCorte(panel.barbero, { registrado_por: m.registrado_por ?? null });
+        const vence =
+          panel && m.tipo === "corte"
+            ? venceDeshacer(panel.barbero, {
+                fecha: m.fecha,
+                registrado_por: m.registrado_por ?? null,
+              })
+            : null;
 
         let quien: string | null = null;
         if (panel && m.tipo === "corte") {
@@ -127,7 +128,9 @@ export function HistorialCliente({
                     {formatearPesos(m.monto)}
                   </span>
                 )}
-                {deshacer ? <BotonDeshacer corteId={m.id} fecha={m.fecha} /> : null}
+                {vence !== null && vence > ahora ? (
+                  <BotonDeshacer corteId={m.id} vence={vence} />
+                ) : null}
               </span>
             ) : null}
           </li>

@@ -11,6 +11,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
+import { BotonDeshacer } from "@/components/panel/boton-deshacer";
 import { ResumenCaja } from "@/components/panel/resumen-caja";
 import { Button } from "@/components/ui/button";
 import { requireBarbero } from "@/lib/auth";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/datos/panel";
 import { hoyISO, nombreDelMes, tiempoRelativo } from "@/lib/fechas";
 import { rangoPeriodo } from "@/lib/periodos";
+import { venceDeshacer } from "@/lib/permisos";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
 import { saludo } from "@/lib/saludo";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,8 @@ export default async function PaginaPanel() {
     // La caja es solo del dueño (la base se la niega al empleado).
     esDueno ? obtenerFacturacion(rangoPeriodo("mes", hoyISO())) : Promise.resolve(null),
   ]);
+  // eslint-disable-next-line react-hooks/purity -- render del servidor: la hora del request es intencional.
+  const ahora = Date.now();
   const mes = nombreDelMes();
   // Mes anterior según la fecha argentina (el servidor corre en UTC).
   const [anio, mesNum] = hoyISO().split("-").map(Number);
@@ -196,36 +200,50 @@ export default async function PaginaPanel() {
             />
           ) : (
             <ul className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
-              {actividad.map((a) => (
-                <li key={`${a.tipo}-${a.id}`}>
-                  <Link
-                    href={rutaCliente(a.clienteId)}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-ebano-claro"
-                  >
-                    <span
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-full",
-                        a.tipo === "corte" ? "bg-ebano-claro text-arena" : "bg-oro/15 text-oro",
-                      )}
+              {actividad.map((a) => {
+                const vence =
+                  a.tipo === "corte"
+                    ? venceDeshacer(perfil, {
+                        fecha: a.fecha,
+                        registrado_por: a.registrado_por ?? null,
+                      })
+                    : null;
+                return (
+                  <li key={`${a.tipo}-${a.id}`} className="flex items-center">
+                    <Link
+                      href={rutaCliente(a.clienteId)}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-ebano-claro"
                     >
-                      {a.tipo === "corte" ? (
-                        <Scissors className="size-4" aria-hidden />
-                      ) : (
-                        <Gift className="size-4" aria-hidden />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-marfil">{a.clienteNombre}</span>
-                      <span className="block truncate text-[0.8125rem] text-arena">
-                        {a.tipo === "corte" ? "Corte" : `Canjeó: ${a.detalle}`}
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-full",
+                          a.tipo === "corte" ? "bg-ebano-claro text-arena" : "bg-oro/15 text-oro",
+                        )}
+                      >
+                        {a.tipo === "corte" ? (
+                          <Scissors className="size-4" aria-hidden />
+                        ) : (
+                          <Gift className="size-4" aria-hidden />
+                        )}
                       </span>
-                    </span>
-                    <time dateTime={a.fecha} className="shrink-0 text-[0.8125rem] text-arena">
-                      {tiempoRelativo(a.fecha)}
-                    </time>
-                  </Link>
-                </li>
-              ))}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-marfil">{a.clienteNombre}</span>
+                        <span className="block truncate text-[0.8125rem] text-arena">
+                          {a.tipo === "corte" ? "Corte" : `Canjeó: ${a.detalle}`}
+                        </span>
+                      </span>
+                      <time dateTime={a.fecha} className="shrink-0 text-[0.8125rem] text-arena">
+                        {tiempoRelativo(a.fecha)}
+                      </time>
+                    </Link>
+                    {vence !== null && vence > ahora ? (
+                      <span className="shrink-0 pr-2">
+                        <BotonDeshacer corteId={a.id} vence={vence} />
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

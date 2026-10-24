@@ -224,6 +224,7 @@ export type Actividad = {
   clienteId: string;
   clienteNombre: string;
   detalle?: string;
+  registrado_por?: string | null;
 };
 
 export async function actividadReciente(limite = 8): Promise<Actividad[]> {
@@ -231,7 +232,7 @@ export async function actividadReciente(limite = 8): Promise<Actividad[]> {
   const [cortes, canjes] = await Promise.all([
     supabase
       .from("cortes")
-      .select("id, fecha, cliente_id")
+      .select("id, fecha, cliente_id, registrado_por")
       .order("fecha", { ascending: false })
       .limit(limite),
     supabase
@@ -248,6 +249,7 @@ export async function actividadReciente(limite = 8): Promise<Actividad[]> {
       tipo: "corte" as const,
       fecha: c.fecha,
       clienteId: c.cliente_id,
+      registrado_por: c.registrado_por,
     })),
     ...(canjes.data ?? []).map((c) => ({
       id: c.id,

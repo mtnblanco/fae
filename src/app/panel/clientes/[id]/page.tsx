@@ -158,7 +158,7 @@ export default async function PaginaCliente({
         ) : null}
         <p className="mt-3 text-[0.8125rem] text-arena">
           {esDueno
-            ? "Los cortes se pueden deshacer hasta 10 minutos después de cargarlos. Los cortes anteriores a los montos figuran “Sin monto”."
+            ? "Podés deshacer cualquier corte de hoy por si hubo un error. Los cortes anteriores a los montos figuran “Sin monto”."
             : "Ves solo los cortes que cargaste vos. Los podés deshacer hasta 10 minutos después de cargarlos."}
         </p>
       </section>

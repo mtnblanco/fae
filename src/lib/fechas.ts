@@ -71,3 +71,12 @@ export function tiempoRelativo(valor: string | Date, ahora: Date = new Date()): 
   if (abs < 86_400 * 365) return relativo.format(Math.round(segundos / (86_400 * 30)), "month");
   return relativo.format(Math.round(segundos / (86_400 * 365)), "year");
 }
+
+/**
+ * Fin del día (medianoche siguiente, hora de Argentina) del momento dado, en
+ * ms. Argentina no tiene horario de verano: el día empieza a las 03:00 UTC.
+ */
+export function finDelDia(valor: string | Date): number {
+  const [anio, mes, dia] = hoyISO(aFecha(valor)).split("-").map(Number);
+  return Date.UTC(anio!, mes! - 1, dia! + 1, 3);
+}

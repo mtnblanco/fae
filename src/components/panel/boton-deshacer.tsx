@@ -7,16 +7,17 @@ import { deshacerCorte } from "@/app/panel/clientes/acciones";
 import { Confirmar } from "@/components/comunes/confirmar";
 import { Button } from "@/components/ui/button";
 
-const PLAZO_MS = 10 * 60 * 1000;
-
-/** "Deshacer" para un corte recién cargado. Se oculta solo cuando vence el plazo. */
-export function BotonDeshacer({ corteId, fecha }: { corteId: string; fecha: string }) {
-  const vence = new Date(fecha).getTime() + PLAZO_MS;
+/**
+ * "Deshacer" para un corte. Se oculta solo cuando vence el plazo (`vence`, en
+ * ms: ver venceDeshacer en lib/permisos).
+ */
+export function BotonDeshacer({ corteId, vence }: { corteId: string; vence: number }) {
   const [vigente, setVigente] = useState(true);
   const [pendiente, startTransition] = useTransition();
 
   useEffect(() => {
     const restante = vence - Date.now();
+    // setTimeout no admite más de ~24 días; el plazo nunca pasa de un día.
     const t = setTimeout(() => setVigente(false), Math.max(0, restante));
     return () => clearTimeout(t);
   }, [vence]);

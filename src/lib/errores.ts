@@ -8,7 +8,8 @@ const MENSAJES_DB: Record<string, string> = {
   cliente_inexistente: "No encontramos a ese cliente.",
   corte_inexistente: "Ese corte ya no existe (puede que ya se haya deshecho).",
   corte_reciente: "Ya se cargó un corte a este cliente hace instantes.",
-  fuera_de_plazo: "Pasaron más de 10 minutos: este corte ya no se puede deshacer.",
+  fuera_de_plazo:
+    "Este corte ya no se puede deshacer: el barbero tiene 10 minutos y el dueño, hasta el final del día.",
   premio_ya_canjeado:
     "Este corte completó un premio que ya se canjeó, así que no se puede deshacer.",
   sin_premios: "Este cliente no tiene ese premio para canjear.",

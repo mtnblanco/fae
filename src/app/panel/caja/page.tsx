@@ -5,12 +5,14 @@ import { redirect } from "next/navigation";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { Paginacion } from "@/components/comunes/paginacion";
+import { BotonDeshacer } from "@/components/panel/boton-deshacer";
 import { ResumenCaja } from "@/components/panel/resumen-caja";
 import { requireDueno } from "@/lib/auth";
 import { listarCortesPeriodo, nombresBarberos, obtenerFacturacion } from "@/lib/datos/panel";
 import { formatearPesos } from "@/lib/dinero";
 import { formatearDia, formatearFechaHora, hoyISO } from "@/lib/fechas";
 import { ETIQUETAS_PERIODO, esPeriodo, type Periodo, PERIODOS, rangoPeriodo } from "@/lib/periodos";
+import { venceDeshacer } from "@/lib/permisos";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +21,7 @@ export const metadata: Metadata = { title: "Caja" };
 const valor = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caja">) {
-  await requireDueno();
+  const { perfil } = await requireDueno();
   const sp = await searchParams;
   const periodo: Periodo = esPeriodo(valor(sp.periodo)) ? (valor(sp.periodo) as Periodo) : "mes";
   const pagina = Math.max(1, Number.parseInt(valor(sp.pagina) ?? "1", 10) || 1);
@@ -39,6 +41,9 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
     listarCortesPeriodo(rango, pagina),
     nombresBarberos(),
   ]);
+
+  // eslint-disable-next-line react-hooks/purity -- render del servidor: la hora del request es intencional.
+  const ahora = Date.now();
 
   // Página fuera de rango (URL vieja o editada a mano): vuelve a la primera.
   if (listado.cortes.length === 0 && pagina > 1) redirect(href({ pagina: 1 }));
@@ -102,11 +107,12 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
           <ul className="divide-y divide-hierro rounded-xl border border-hierro bg-ebano">
             {listado.cortes.map((c) => {
               const barbero = c.registrado_por ? barberos[c.registrado_por] : undefined;
+              const vence = venceDeshacer(perfil, c);
               return (
-                <li key={c.id}>
+                <li key={c.id} className="flex items-center">
                   <Link
                     href={rutaCliente(c.clienteId)}
-                    className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-ebano-claro"
+                    className="flex min-h-16 min-w-0 flex-1 items-center gap-3 px-4 py-3 transition-colors hover:bg-ebano-claro"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-marfil">{c.clienteNombre}</span>
@@ -123,6 +129,11 @@ export default async function PaginaCaja({ searchParams }: PageProps<"/panel/caj
                       </span>
                     )}
                   </Link>
+                  {vence !== null && vence > ahora ? (
+                    <span className="shrink-0 pr-2">
+                      <BotonDeshacer corteId={c.id} vence={vence} />
+                    </span>
+                  ) : null}
                 </li>
               );
             })}

@@ -563,15 +563,39 @@ describe("barbero: deshacer_corte", () => {
     );
   });
 
-  it("no deshace cortes de hace más de 10 minutos", async () => {
+  it("el empleado no deshace cortes de hace más de 10 minutos", async () => {
     const viejo = await fila<{ id: string }>(
       `insert into cortes (cliente_id, fecha, registrado_por) values ($1, now() - interval '11 minutes', $2) returning id`,
-      [LUCAS, BARBERO],
+      [LUCAS, EMPLEADO],
     );
-    await conRol(como(BARBERO), () =>
+    await conRol(como(EMPLEADO), () =>
       esperarError(db.query(`select deshacer_corte($1)`, [viejo.id]), /fuera_de_plazo/),
     );
     await db.query(`delete from cortes where id = $1`, [viejo.id]);
+  });
+
+  it("el dueño deshace cortes del mismo día, aunque pasaran los 10 minutos", async () => {
+    // Hace 11 minutos o, si recién empezó el día, a las 00:00 (sigue siendo hoy).
+    const deHoy = await fila<{ id: string }>(
+      `insert into cortes (cliente_id, fecha, registrado_por) values ($1, greatest(
+         now() - interval '11 minutes',
+         date_trunc('day', now() at time zone 'America/Argentina/Buenos_Aires') at time zone 'America/Argentina/Buenos_Aires'
+       ), $2) returning id`,
+      [LUCAS, EMPLEADO],
+    );
+    await conRol(como(BARBERO), () => db.query(`select deshacer_corte($1)`, [deHoy.id]));
+    expect(await contar(`select * from cortes where id = $1`, [deHoy.id])).toBe(0);
+  });
+
+  it("el dueño no deshace cortes de días anteriores", async () => {
+    const deAyer = await fila<{ id: string }>(
+      `insert into cortes (cliente_id, fecha, registrado_por) values ($1, now() - interval '1 day 1 minute', $2) returning id`,
+      [LUCAS, BARBERO],
+    );
+    await conRol(como(BARBERO), () =>
+      esperarError(db.query(`select deshacer_corte($1)`, [deAyer.id]), /fuera_de_plazo/),
+    );
+    await db.query(`delete from cortes where id = $1`, [deAyer.id]);
   });
 
   it("no deshace el corte que ganó un premio ya canjeado", async () => {
