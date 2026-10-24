@@ -19,7 +19,7 @@ export function whatsappTurno(cliente: string, turno: Pick<MiTurno, "inicio" | "
   if (!sitio.whatsapp) return null;
   const nombre = cliente.split(" ")[0] ?? cliente;
   const barbero = turno.barbero_nombre.split(" ")[0] ?? turno.barbero_nombre;
-  const texto = `Hola, soy ${nombre}. Tengo turno ${cuandoCorto(turno.inicio).replace(" · ", " a las ")} con ${barbero} y no voy a poder ir.`;
+  const texto = `Hola, soy ${nombre}. Tengo turno ${cuandoCorto(turno.inicio).replace(" · ", " a las ")} con ${barbero} y necesito cancelarlo.`;
   return `https://wa.me/${sitio.whatsapp}?text=${encodeURIComponent(texto)}`;
 }
 

@@ -6,6 +6,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { cancelarMiTurno } from "@/app/turnos/acciones";
 import { Confirmar } from "@/components/comunes/confirmar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
 import { cn } from "@/lib/utils";
@@ -85,14 +96,41 @@ export function TarjetaMiTurno({
             destructiva
             onConfirmar={cancelar}
           />
-        ) : whatsapp ? (
-          <Button asChild variant="outline" className="h-12">
-            <a href={whatsapp} target="_blank" rel="noopener noreferrer">
-              <MessageCircle aria-hidden />
-              Avisar
-            </a>
-          </Button>
-        ) : null}
+        ) : (
+          // Con 6 horas o menos no se cancela desde la web: lo cancela el
+          // barbero y el cliente abona la mitad.
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="h-12">
+                <X aria-hidden />
+                Cancelar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="w-[calc(100%-2rem)] max-w-md p-5 data-[size=default]:max-w-md data-[size=default]:sm:max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-titulo text-2xl font-normal">
+                  No podés cancelarlo desde acá
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-[0.9375rem] leading-relaxed text-arena">
+                  Faltan 6 horas o menos para tu turno. Para cancelarlo tenés que hablar con{" "}
+                  <span className="text-marfil">{barbero}</span>, que es quien lo cancela, y vas a
+                  tener que <span className="text-marfil">abonar la mitad del corte</span>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="-mx-5 -mb-5 p-4">
+                <AlertDialogCancel variant="outline">Entendido</AlertDialogCancel>
+                {whatsapp ? (
+                  <AlertDialogAction asChild>
+                    <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle aria-hidden />
+                      Hablar por WhatsApp
+                    </a>
+                  </AlertDialogAction>
+                ) : null}
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
       {puedeCancelar ? (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-arena">
@@ -100,7 +138,7 @@ export function TarjetaMiTurno({
         </p>
       ) : (
         <p className="mt-3 text-[0.8125rem] leading-relaxed text-arena">
-          Faltan 6 horas o menos: si no podés venir, avisanos por WhatsApp.
+          Faltan 6 horas o menos: para cancelarlo hablá con tu barbero. Se abona la mitad del corte.
         </p>
       )}
     </section>
