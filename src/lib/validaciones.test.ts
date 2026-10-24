@@ -3,6 +3,7 @@ import {
   altaClienteSchema,
   cambiarPasswordSchema,
   descuentoSchema,
+  fotoDescuentoSchema,
   loginSchema,
   montoSchema,
   precioClienteSchema,
@@ -96,6 +97,26 @@ describe("descuentoSchema", () => {
 
   it("rechaza fin anterior al inicio", () => {
     expect(descuentoSchema.safeParse({ ...base, vigente_hasta: "2026-09-01" }).success).toBe(false);
+  });
+});
+
+describe("fotoDescuentoSchema", () => {
+  const archivo = (tamano: number, tipo: string) =>
+    new File([new Uint8Array(tamano)], "foto", { type: tipo });
+
+  it("acepta WebP y JPEG de hasta 400 KB", () => {
+    expect(fotoDescuentoSchema.safeParse(archivo(1000, "image/webp")).success).toBe(true);
+    expect(fotoDescuentoSchema.safeParse(archivo(400 * 1024, "image/jpeg")).success).toBe(true);
+  });
+
+  it("rechaza otros tipos, archivos vacíos o de más de 400 KB", () => {
+    expect(fotoDescuentoSchema.safeParse(archivo(1000, "image/png")).success).toBe(false);
+    expect(fotoDescuentoSchema.safeParse(archivo(1000, "image/svg+xml")).success).toBe(false);
+    expect(fotoDescuentoSchema.safeParse(archivo(0, "image/jpeg")).success).toBe(false);
+    expect(fotoDescuentoSchema.safeParse(archivo(400 * 1024 + 1, "image/jpeg")).success).toBe(
+      false,
+    );
+    expect(fotoDescuentoSchema.safeParse("no es un archivo").success).toBe(false);
   });
 });
 

@@ -19,7 +19,7 @@ export async function datosCarnet(clienteId: string) {
     // El RLS ya filtra activos y vigentes para el cliente.
     supabase
       .from("descuentos_asociados")
-      .select("id, comercio, descripcion, vigente_hasta")
+      .select("id, comercio, descripcion, vigente_hasta, foto_actualizada_en")
       .order("comercio", { ascending: true }),
   ]);
 

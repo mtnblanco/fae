@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FOTO_MAX_BYTES, TIPOS_FOTO } from "./descuentos";
 import { MONTO_MAX, parsearMonto } from "./dinero";
 import {
   esPasswordComun,
@@ -146,6 +147,13 @@ export const descuentoSchema = z
     error: "La fecha de fin no puede ser anterior a la de inicio.",
     path: ["vigente_hasta"],
   });
+
+/** La foto del local ya comprimida en el navegador (los bytes se revisan aparte). */
+export const fotoDescuentoSchema = z
+  .file({ error: "Elegí una foto." })
+  .min(12, { error: "La foto está vacía o dañada." })
+  .max(FOTO_MAX_BYTES, { error: "La foto es muy pesada (máximo 400 KB)." })
+  .mime([...TIPOS_FOTO], { error: "La foto tiene que ser JPG o WebP." });
 
 // ─── Regla de premios (etapas) ──────────────────────────────────────────────
 // Los mismos límites que valida la base (guardar_regla_etapas).

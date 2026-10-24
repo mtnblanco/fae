@@ -23,6 +23,8 @@ const MENSAJES_DB: Record<string, string> = {
   monto_invalido: "Revisá el monto: escribilo como 8.000 o 8.500,50.",
   periodo_invalido: "El período elegido no es válido.",
   cambio_password_pendiente: "Antes de seguir, elegí tu contraseña nueva.",
+  foto_invalida: "La foto tiene que ser JPG o WebP de hasta 400 KB. Probá con otra.",
+  descuento_inexistente: "Ese descuento ya no existe. Recargá la página.",
 };
 
 export const ERROR_GENERICO = "Algo salió mal. Probá de nuevo en un momento.";

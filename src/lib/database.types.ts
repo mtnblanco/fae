@@ -18,6 +18,7 @@ type Relacion<Nombre extends string, Columna extends string, Tabla extends strin
 };
 
 export type Rol = "barbero" | "cliente";
+export type TipoFoto = "image/webp" | "image/jpeg";
 
 export type Database = {
   __InternalSupabase: {
@@ -164,6 +165,8 @@ export type Database = {
           vigente_hasta: string | null;
           activo: boolean;
           created_at: string;
+          /** Versión de la foto del local (null = sin foto). Solo la escriben las funciones. */
+          foto_actualizada_en: string | null;
         };
         Insert: {
           id?: string;
@@ -183,6 +186,19 @@ export type Database = {
           activo?: boolean;
           created_at?: string;
         };
+        Relationships: [];
+      };
+      // ─── Foto del local de cada descuento (migración 20261027000100) ───
+      fotos_descuentos: {
+        Row: {
+          descuento_id: string;
+          tipo: TipoFoto;
+          /** La imagen en base64. */
+          foto: string;
+          actualizada_en: string;
+        };
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       // ─── Turnos (migración 20261023000200) ───
@@ -298,6 +314,11 @@ export type Database = {
         Returns: Database["public"]["Tables"]["cortes"]["Row"];
       };
       deshacer_corte: { Args: { p_corte_id: string }; Returns: undefined };
+      guardar_foto_descuento: {
+        Args: { p_descuento: string; p_tipo: TipoFoto; p_foto: string };
+        Returns: string;
+      };
+      quitar_foto_descuento: { Args: { p_descuento: string }; Returns: undefined };
       canjear_premio: {
         Args: { p_cliente_id: string; p_solicitud_id?: string; p_etapa?: number | null };
         Returns: Database["public"]["Tables"]["canjes"]["Row"];

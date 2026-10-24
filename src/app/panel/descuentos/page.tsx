@@ -2,6 +2,7 @@ import { BadgePercent, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
+import { FotoComercio } from "@/components/comunes/foto-comercio";
 import { AccionesDescuento } from "@/components/panel/acciones-descuento";
 import { DialogoDescuento } from "@/components/panel/dialogo-descuento";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,15 @@ export default async function PaginaDescuentos() {
                   </div>
                   <AccionesDescuento descuento={d} hoy={hoy} />
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-arena">{d.descripcion}</p>
+                <div className="mt-3 flex items-start gap-3">
+                  <FotoComercio
+                    descuento={d}
+                    ancho={128}
+                    alto={128}
+                    className="size-16 shrink-0 rounded-lg border border-hierro"
+                  />
+                  <p className="min-w-0 text-sm leading-relaxed text-arena">{d.descripcion}</p>
+                </div>
                 <p className="mt-3 text-[0.8125rem] text-arena">
                   {d.vigente_hasta
                     ? `Del ${formatearDia(d.vigente_desde)} al ${formatearDia(d.vigente_hasta)}`

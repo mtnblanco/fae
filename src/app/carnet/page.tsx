@@ -7,6 +7,7 @@ import { Bienvenida } from "@/components/carnet/bienvenida";
 import { ListaEtapas } from "@/components/carnet/lista-etapas";
 import { TarjetaCarnet } from "@/components/carnet/tarjeta-carnet";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
+import { FotoComercio } from "@/components/comunes/foto-comercio";
 import { TurnoCarnet } from "@/components/turnos/turno-carnet";
 import { HistorialCliente } from "@/components/panel/historial-cliente";
 import { urlDelSitio } from "@/config/site";
@@ -135,11 +136,30 @@ export default async function PaginaCarnet() {
         ) : (
           <ul className="grid grid-cols-1 gap-3">
             {descuentos.map((d) => (
-              <li key={d.id} className="rounded-xl border border-hierro bg-ebano p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-ebano-claro text-oro">
-                    <Store className="size-[1.125rem]" aria-hidden />
-                  </span>
+              <li key={d.id} className="overflow-hidden rounded-xl border border-hierro bg-ebano">
+                {d.foto_actualizada_en ? (
+                  <div className="relative">
+                    <FotoComercio
+                      descuento={d}
+                      ancho={1200}
+                      alto={600}
+                      className="aspect-[2/1] w-full"
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-0 -bottom-px h-1/3 bg-gradient-to-t from-ebano to-transparent"
+                    />
+                  </div>
+                ) : null}
+                <div className="flex items-start gap-3 p-4">
+                  {d.foto_actualizada_en ? null : (
+                    <FotoComercio
+                      descuento={d}
+                      ancho={40}
+                      alto={40}
+                      className="size-10 shrink-0 rounded-lg"
+                    />
+                  )}
                   <div className="min-w-0">
                     <p className="font-medium text-marfil">{d.comercio}</p>
                     <p className="mt-0.5 text-sm leading-relaxed text-arena">{d.descripcion}</p>
