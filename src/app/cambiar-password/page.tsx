@@ -42,7 +42,6 @@ export default async function PaginaCambiarPassword() {
     >
       <FormularioCambiarPassword
         obligatorio={obligatorio}
-        esCliente={perfil.rol === "cliente"}
         usuario={perfil.telefono ?? email ?? ""}
       />
     </MarcoAuth>

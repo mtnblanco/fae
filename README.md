@@ -341,7 +341,7 @@ scripts/                Emulador local y copia del lector de QR
 - Crear, editar, resetear y eliminar usuarios se hace solo en el servidor con la clave secreta, siempre después de verificar que quien llama es el barbero. La clave nunca llega al navegador (`server-only`).
 - `proxy.ts` redirige según el rol, y además cada página y cada acción vuelve a verificar la sesión en el servidor.
 - **Barbero activo:** `es_barbero()`/`es_dueno()` exigen que la cuenta no esté bloqueada (`quitar-empleado.sql`) ni tenga un cambio de contraseña pendiente; un empleado dado de baja pierde los permisos en el acto.
-- **Contraseñas y sesiones:** resetear una contraseña cierra todas las sesiones del cliente (`revocar_sesiones`, solo el servidor) y queda registrado quién la reseteó; el cambio obligatorio pide la contraseña temporal; cambiarla cierra las otras sesiones. Contraseñas nuevas: mínimo 8, no las más comunes ni el teléfono.
+- **Contraseñas y sesiones:** resetear una contraseña cierra todas las sesiones del cliente (`revocar_sesiones`, solo el servidor) y queda registrado quién la reseteó; el cambio obligatorio no vuelve a pedir la temporal (el cliente acaba de entrar con ella, y una sesión vieja ya quedó cerrada); cambiarla cierra las otras sesiones. Contraseñas nuevas: mínimo 8, no las más comunes ni el teléfono.
 - **Límite de intentos** de login y de verificación de contraseña, por IP y por cuenta, en Postgres (`consumir_intento`).
 - **Notificaciones push:** solo a servicios push reales (FCM, Mozilla, Apple, Windows), hasta 10 dispositivos por barbero; el cliente puede reservar 5 y cancelar 3 veces cada 24 h.
 - **Headers:** Content-Security-Policy con nonce (enforce, `src/proxy.ts` + `src/lib/csp.ts`) y HSTS.
@@ -374,7 +374,7 @@ Corregí `NEXT_PUBLIC_SITE_URL` en Vercel y hacé **Redeploy**. Los carnets se r
 El navegador tiene que tener permiso de cámara para el sitio (candado al lado de la dirección → Permisos). Funciona solo con `https` (Vercel ya lo da). Si no hay caso, usá **Buscar al cliente a mano**.
 
 **Un cliente se olvidó la contraseña.**
-Buscalo en **Clientes** → **Resetear contraseña** → pasale la temporal por WhatsApp. Al entrar, le pide escribir otra vez esa temporal ("Contraseña que te dio tu barbero") y elegir una nueva. El reseteo cierra la sesión en todos sus dispositivos (si perdió el celular, quien lo tenga queda afuera).
+Buscalo en **Clientes** → **Resetear contraseña** → pasale la temporal por WhatsApp. Entra con esa temporal y elige una nueva (no se la vuelve a pedir). El reseteo cierra la sesión en todos sus dispositivos (si perdió el celular, quien lo tenga queda afuera).
 
 **"Demasiados intentos. Probá de nuevo en X minutos."**
 Es el límite de intentos: 10 contraseñas incorrectas en 15 minutos bloquean esa cuenta un rato, y 20 desde la misma conexión la bloquean para cualquier cuenta. Hay que esperar los minutos que dice; si el cliente no se acuerda la contraseña, reseteásela (cuando pase el bloqueo, entra con la temporal).

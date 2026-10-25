@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { requireUsuario } from "@/lib/auth";
+import { requireUsuario, type Sesion } from "@/lib/auth";
 import { mensajeDeErrorAuth } from "@/lib/errores";
 import { type EstadoFormulario, texto } from "@/lib/formularios";
 import {
@@ -24,10 +24,12 @@ import { cambiarPasswordSchema, erroresDeCampo } from "@/lib/validaciones";
 
 /**
  * Cambio de contraseña, obligatorio (después de un alta o un reseteo) o
- * voluntario. En los dos casos se pide la contraseña vigente: la temporal que
- * dio el barbero o la actual. Así, una sesión vieja (por ejemplo, la de quien
- * tenía el celular perdido) no puede elegir la contraseña nueva después de un
- * reseteo. Al terminar, se cierran las demás sesiones de la cuenta.
+ * voluntario. En el voluntario se pide la contraseña actual. En el obligatorio
+ * no: el usuario acaba de entrar con la temporal. Una sesión vieja (por
+ * ejemplo, la de quien tenía el celular perdido) no puede elegir la nueva
+ * porque el reseteo cierra todas las sesiones, y Supabase rechaza el JWT de una
+ * sesión cerrada (lo confirmamos con getUser antes de cambiarla). Al terminar,
+ * se cierran las demás sesiones de la cuenta.
  */
 export async function cambiarPassword(
   _previo: EstadoFormulario,
@@ -44,20 +46,13 @@ export async function cambiarPassword(
   if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error) };
 
   const { actual, nueva } = parse.data;
-  if (!actual) {
-    return {
-      estado: "error",
-      errores: {
-        actual: [
-          obligatorio
-            ? "Ingresá la contraseña que te dio el barbero."
-            : "Ingresá tu contraseña actual.",
-        ],
-      },
-    };
-  }
   if (esPasswordTelefono(nueva, sesion.perfil.telefono)) {
     return { estado: "error", errores: { nueva: [MSJ_PASSWORD_TELEFONO] } };
+  }
+  if (obligatorio) return cambiarObligatoria(sesion, nueva);
+
+  if (!actual) {
+    return { estado: "error", errores: { actual: ["Ingresá tu contraseña actual."] } };
   }
   if (!sesion.email) return { estado: "error", mensaje: mensajeDeErrorAuth(null) };
 
@@ -79,16 +74,7 @@ export async function cambiarPassword(
   if (errorVerificacion) {
     return errorVerificacion.code === "over_request_rate_limit"
       ? { estado: "error", mensaje: mensajeDeErrorAuth(errorVerificacion) }
-      : {
-          estado: "error",
-          errores: {
-            actual: [
-              obligatorio
-                ? "Esa no es la contraseña que te dio el barbero. Revisá el mensaje que te mandó."
-                : "La contraseña actual no es correcta.",
-            ],
-          },
-        };
+      : { estado: "error", errores: { actual: ["La contraseña actual no es correcta."] } };
   }
 
   const supabase = await createClient();
@@ -105,20 +91,7 @@ export async function cambiarPassword(
       : { estado: "error", mensaje };
   }
 
-  // El flag solo se baja acá, en el servidor, después de cambiarla con éxito.
-  if (obligatorio) {
-    const { error: errorFlag } = await createAdminClient()
-      .from("perfiles")
-      .update({ debe_cambiar_password: false })
-      .eq("id", sesion.userId);
-    if (errorFlag) return { estado: "error", mensaje: mensajeDeErrorAuth(null) };
-  }
-
-  // Cierra las otras sesiones de la cuenta (otros dispositivos y la de la
-  // verificación). Esta queda abierta.
-  const { error: errorSalir } = await supabase.auth.signOut({ scope: "others" });
-  if (errorSalir)
-    console.error("[password] No se cerraron las otras sesiones:", errorSalir.message);
+  await cerrarOtrasSesiones(supabase);
 
   after(() =>
     liberarIntentos([
@@ -127,11 +100,50 @@ export async function cambiarPassword(
     ]),
   );
 
-  if (obligatorio) {
-    redirect(sesion.perfil.rol === "barbero" ? RUTAS.panel : `${RUTAS.carnet}?bienvenida=1`);
-  }
   return {
     estado: "ok",
     mensaje: "¡Listo! Tu contraseña se actualizó y cerramos la sesión en tus otros dispositivos.",
   };
+}
+
+/** Primer cambio después de un alta o un reseteo: sin pedir la temporal. */
+async function cambiarObligatoria(sesion: Sesion, nueva: string): Promise<EstadoFormulario> {
+  const supabase = await createClient();
+
+  // getUser va a Supabase Auth, que rechaza el JWT de una sesión cerrada por un
+  // reseteo (getClaims solo valida la firma). Si la sesión ya no existe, que
+  // vuelva a entrar con la contraseña nueva que le dio el barbero.
+  const { error: errorSesion } = await supabase.auth.getUser();
+  if (errorSesion) {
+    await supabase.auth.signOut({ scope: "local" });
+    redirect(RUTAS.login);
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: nueva });
+  if (error) {
+    if (error.code === "reauthentication_needed" || error.code === "session_not_found") {
+      await supabase.auth.signOut({ scope: "local" });
+      redirect(RUTAS.login);
+    }
+    const mensaje = mensajeDeErrorAuth(error);
+    return error.code === "same_password" || error.code === "weak_password"
+      ? { estado: "error", errores: { nueva: [mensaje] } }
+      : { estado: "error", mensaje };
+  }
+
+  // El flag solo se baja acá, en el servidor, después de cambiarla con éxito.
+  const { error: errorFlag } = await createAdminClient()
+    .from("perfiles")
+    .update({ debe_cambiar_password: false })
+    .eq("id", sesion.userId);
+  if (errorFlag) return { estado: "error", mensaje: mensajeDeErrorAuth(null) };
+
+  await cerrarOtrasSesiones(supabase);
+  redirect(sesion.perfil.rol === "barbero" ? RUTAS.panel : `${RUTAS.carnet}?bienvenida=1`);
+}
+
+/** Cierra las otras sesiones de la cuenta (otros dispositivos y la de la verificación). */
+async function cerrarOtrasSesiones(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { error } = await supabase.auth.signOut({ scope: "others" });
+  if (error) console.error("[password] No se cerraron las otras sesiones:", error.message);
 }
