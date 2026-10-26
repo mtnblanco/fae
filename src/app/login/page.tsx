@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AvisoAppInstalada } from "@/components/comunes/aviso-app-instalada";
 import { MarcoAuth } from "@/components/comunes/marco-auth";
 import { FormularioLogin } from "./formulario-login";
 
@@ -19,6 +20,7 @@ export default function PaginaLogin() {
         </p>
       }
     >
+      <AvisoAppInstalada />
       <FormularioLogin />
     </MarcoAuth>
   );

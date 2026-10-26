@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { ActualizadorCarnet } from "@/components/carnet/actualizador-carnet";
 import { Bienvenida } from "@/components/carnet/bienvenida";
 import { ListaEtapas } from "@/components/carnet/lista-etapas";
+import { SugerenciaInstalar } from "@/components/carnet/sugerencia-instalar";
 import { TarjetaCarnet } from "@/components/carnet/tarjeta-carnet";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { FotoComercio } from "@/components/comunes/foto-comercio";
@@ -57,6 +58,8 @@ export default async function PaginaCarnet() {
       />
 
       <TurnoCarnet cliente={perfil.nombre} />
+
+      <SugerenciaInstalar />
 
       <section aria-labelledby="titulo-premios" className="grid grid-cols-1 gap-4">
         <h2 id="titulo-premios" className="text-2xl">

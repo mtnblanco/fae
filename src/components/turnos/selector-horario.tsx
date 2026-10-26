@@ -238,7 +238,7 @@ export function SelectorHorario({
 
       {horario ? (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-hierro bg-noche px-(--gutter) pt-3"
+          className="px-seguro fixed inset-x-0 bottom-0 z-40 border-t border-hierro bg-noche pt-3"
           style={{ paddingBottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
         >
           <div className="mx-auto grid max-w-md grid-cols-1 gap-2.5">

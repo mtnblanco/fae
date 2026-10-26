@@ -16,7 +16,7 @@ export function PantallaMensaje({
   return (
     <main
       id="contenido"
-      className="relative isolate flex min-h-dvh items-center justify-center px-(--gutter) py-16"
+      className="px-seguro relative isolate flex min-h-dvh items-center justify-center pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(4rem+env(safe-area-inset-bottom))]"
     >
       <div
         aria-hidden

@@ -24,12 +24,14 @@ export function MarcoAuth({
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(255_190_30/0.08),transparent)]"
       />
-      <header className="contenedor flex h-16 items-center">
-        <Logo href={RUTAS.inicio} tamano="sm" />
+      <header className="pt-seguro">
+        <div className="contenedor flex h-16 items-center">
+          <Logo href={RUTAS.inicio} tamano="sm" />
+        </div>
       </header>
       <main
         id="contenido"
-        className="contenedor pb-seguro flex flex-1 flex-col justify-center py-8"
+        className="contenedor flex flex-1 flex-col justify-center pt-8 pb-[calc(2rem+env(safe-area-inset-bottom))]"
       >
         <div className="mx-auto w-full max-w-sm">
           <h1 className="text-[2.25rem] leading-[1.05] text-marfil">{titulo}</h1>

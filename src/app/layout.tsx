@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Gloock, Instrument_Sans, Tilt_Neon } from "next/font/google";
 import { connection } from "next/server";
 import { Toaster } from "@/components/ui/sonner";
+import { IMAGENES_INICIO } from "@/config/pantallas-inicio";
 import { sitio, urlDelSitio } from "@/config/site";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export const metadata: Metadata = {
     capable: true,
     title: sitio.nombre,
     statusBarStyle: "black-translucent",
+    startupImage: IMAGENES_INICIO,
   },
   formatDetection: { telephone: false },
   openGraph: {
@@ -77,6 +79,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-dvh">
         {children}
+        {/* App instalada en iPhone: la barra de estado es transparente (black-translucent).
+            Esta franja del alto de la isla/notch oscurece lo que pasa por debajo al
+            scrollear, para que la hora y la batería se lean. En el navegador mide 0. */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-[45] h-[env(safe-area-inset-top)] bg-gradient-to-b from-noche via-noche/90 to-noche/60"
+        />
         <Toaster position="top-center" closeButton richColors={false} />
       </body>
     </html>

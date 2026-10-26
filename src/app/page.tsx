@@ -58,15 +58,17 @@ export default async function Inicio() {
         className="textura-ladrillo pointer-events-none absolute inset-x-0 top-0 -z-10 h-[46rem] [mask-image:linear-gradient(to_bottom,black,transparent)]"
       />
 
-      <header className="contenedor flex h-16 items-center justify-between sm:h-20">
-        <Logo tamano="sm" />
-        <div className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm" className="text-arena hover:text-marfil">
-            <Link href={RUTAS.turnos}>Sacá turno</Link>
-          </Button>
-          <Button asChild variant="oro" size="sm">
-            <Link href={RUTAS.login}>Ingresar</Link>
-          </Button>
+      <header className="pt-seguro">
+        <div className="contenedor flex h-16 items-center justify-between sm:h-20">
+          <Logo tamano="sm" />
+          <div className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="sm" className="text-arena hover:text-marfil">
+              <Link href={RUTAS.turnos}>Sacá turno</Link>
+            </Button>
+            <Button asChild variant="oro" size="sm">
+              <Link href={RUTAS.login}>Ingresar</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -222,7 +224,7 @@ export default async function Inicio() {
         </section>
       </main>
 
-      <footer className="contenedor grid grid-cols-1 gap-6 border-t border-hierro py-10 text-sm text-arena sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-10">
+      <footer className="contenedor grid grid-cols-1 gap-6 border-t border-hierro pt-10 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-sm text-arena sm:grid-cols-[auto_1fr_auto] sm:items-start sm:gap-10">
         <Logo tamano="sm" />
         <div className="grid grid-cols-1 gap-2">
           <p className="text-marfil">

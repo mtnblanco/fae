@@ -30,8 +30,12 @@ export function FormularioLogin() {
             name="usuario"
             type={esTelefono ? "tel" : "email"}
             inputMode={esTelefono ? "tel" : "email"}
+            // "username": el llavero del iPhone y Google guardan teléfono y contraseña juntos.
             autoComplete="username"
             autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
             placeholder={esTelefono ? "2346 40-1122" : "tu@email.com"}
             defaultValue={estado.valores?.usuario}
             required
@@ -41,7 +45,13 @@ export function FormularioLogin() {
 
       <Campo etiqueta="Contraseña" errores={estado.errores?.password}>
         {(a11y) => (
-          <InputPassword {...a11y} name="password" autoComplete="current-password" required />
+          <InputPassword
+            {...a11y}
+            name="password"
+            autoComplete="current-password"
+            enterKeyHint="go"
+            required
+          />
         )}
       </Campo>
 

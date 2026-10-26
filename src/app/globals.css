@@ -205,8 +205,12 @@
   html {
     @apply font-sans;
     color-scheme: dark;
+    /* El fondo también en <html>: el rebote del scroll y el arranque no muestran blanco. */
+    background-color: var(--noche);
     -webkit-tap-highlight-color: transparent;
     text-size-adjust: 100%;
+    overscroll-behavior-x: none;
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -223,6 +227,42 @@
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+  /* Sensación de app: sin demora de doble toque ni selección de texto al tocar los controles. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"],
+  [role="radio"],
+  [role="menuitem"] {
+    touch-action: manipulation;
+  }
+  button,
+  nav,
+  summary,
+  [role="button"],
+  [role="radio"],
+  [role="menuitem"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* App instalada (pantalla de inicio): sin rebote vertical ni el menú de
+     vista previa al mantener apretado un link, como en una app nativa. */
+  @media (display-mode: standalone) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+    a,
+    button,
+    img,
+    svg {
+      -webkit-touch-callout: none;
+    }
   }
   /* Foco visible y consistente en toda la app (teclado). */
   :focus-visible {
@@ -250,7 +290,8 @@
     width: 100%;
     max-width: var(--ancho-contenido);
     margin-inline: auto;
-    padding-inline: var(--gutter);
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
   }
   .numeros {
     font-variant-numeric: tabular-nums;
@@ -270,6 +311,14 @@
   }
   .pb-seguro {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  /* Áreas seguras del iPhone (isla/notch arriba, costados en apaisado). */
+  .pt-seguro {
+    padding-top: env(safe-area-inset-top);
+  }
+  .px-seguro {
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
   }
 
   /* ── Neón ────────────────────────────────────────────────────────────────

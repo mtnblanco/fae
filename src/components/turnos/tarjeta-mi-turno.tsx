@@ -78,7 +78,8 @@ export function TarjetaMiTurno({
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button asChild variant="outline" className="h-12">
-          <a href="/turnos/calendario" download>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- es un archivo .ics (route handler), no una página: navegación completa a propósito. */}
+          <a href="/turnos/calendario">
             <CalendarPlus aria-hidden />
             Agendar
           </a>

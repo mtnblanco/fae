@@ -19,7 +19,8 @@ export default function ErrorGlobal({
           background: "#12100c",
           color: "#f1ebdd",
           fontFamily: "system-ui, sans-serif",
-          padding: 16,
+          padding:
+            "max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
           textAlign: "center",
         }}
       >

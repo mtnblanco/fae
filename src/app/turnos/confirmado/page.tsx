@@ -37,7 +37,8 @@ export default async function PaginaTurnoConfirmado() {
       </div>
       <div className="grid grid-cols-1 gap-3">
         <Button asChild variant="oro" size="lg" className="h-14">
-          <a href="/turnos/calendario" download>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- es un archivo .ics (route handler), no una página: navegación completa a propósito. */}
+          <a href="/turnos/calendario">
             <CalendarPlus aria-hidden />
             Agregar a mi calendario
           </a>

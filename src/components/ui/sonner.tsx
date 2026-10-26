@@ -9,9 +9,20 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+// Márgenes de sonner (24px; 16px en celulares) más las áreas seguras del iPhone:
+// en la app instalada el toast no queda debajo de la isla ni del indicador de inicio.
+const conAreaSegura = (px: number) => ({
+  top: `calc(${px}px + env(safe-area-inset-top))`,
+  bottom: `calc(${px}px + env(safe-area-inset-bottom))`,
+  left: `max(${px}px, env(safe-area-inset-left))`,
+  right: `max(${px}px, env(safe-area-inset-right))`,
+});
+
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
+      offset={conAreaSegura(24)}
+      mobileOffset={conAreaSegura(16)}
       theme="dark"
       className="toaster group"
       icons={{

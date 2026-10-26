@@ -4,6 +4,7 @@ import { IconoApp } from "@/components/marca/icono-app";
 const ICONOS = {
   "192.png": { tamano: 192, maskable: false },
   "512.png": { tamano: 512, maskable: false },
+  "maskable-192.png": { tamano: 192, maskable: true },
   "maskable-512.png": { tamano: 512, maskable: true },
 } as const;
 
