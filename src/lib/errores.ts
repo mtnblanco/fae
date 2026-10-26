@@ -25,6 +25,12 @@ const MENSAJES_DB: Record<string, string> = {
   cambio_password_pendiente: "Antes de seguir, elegí tu contraseña nueva.",
   foto_invalida: "La foto tiene que ser JPG o WebP de hasta 400 KB. Probá con otra.",
   descuento_inexistente: "Ese descuento ya no existe. Recargá la página.",
+  servicio_inexistente: "Ese servicio ya no existe. Recargá la página.",
+  servicio_nombre_invalido: "El nombre del servicio tiene que tener entre 2 y 60 letras.",
+  servicio_descripcion_invalida: "La descripción puede tener hasta 140 letras.",
+  servicio_precio_invalido: "Revisá el precio: tiene que ser mayor a $ 0, por ejemplo 8.000.",
+  servicio_repetido: "Ya hay un servicio con ese nombre.",
+  demasiados_servicios: "Llegaste al máximo de 30 servicios. Borrá alguno que no uses.",
 };
 
 export const ERROR_GENERICO = "Algo salió mal. Probá de nuevo en un momento.";

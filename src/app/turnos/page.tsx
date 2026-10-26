@@ -6,14 +6,19 @@ import { TurnoCliente } from "@/components/turnos/turno-cliente";
 import { Button } from "@/components/ui/button";
 import { sitio } from "@/config/site";
 import { requireCliente } from "@/lib/auth";
-import { barberosConTurnos, miProximoTurno } from "@/lib/datos/turnos";
+import { barberosConTurnos, miProximoTurno, preciosDesde } from "@/lib/datos/turnos";
+import { formatearPesos } from "@/lib/dinero";
 import { hoyISO } from "@/lib/fechas";
 import { RUTAS, rutaTurnosBarbero } from "@/lib/rutas";
 import { cuandoTurno } from "@/lib/turnos/fechas";
 
 export default async function PaginaTurnos() {
   const { perfil } = await requireCliente();
-  const [turno, barberos] = await Promise.all([miProximoTurno(), barberosConTurnos()]);
+  const [turno, barberos, desde] = await Promise.all([
+    miProximoTurno(),
+    barberosConTurnos(),
+    preciosDesde(),
+  ]);
   const hoy = hoyISO();
   const nombre = perfil.nombre.split(" ")[0];
 
@@ -67,6 +72,7 @@ export default async function PaginaTurnos() {
           ) : (
             <ul className="grid grid-cols-1 gap-3">
               {barberos.map((b) => {
+                const precio = desde.get(b.id);
                 const contenido = (
                   <>
                     <AvatarBarbero nombre={b.nombre} />
@@ -81,6 +87,11 @@ export default async function PaginaTurnos() {
                       ) : (
                         <span className="mt-1 block text-sm text-arena">
                           Sin turnos disponibles por ahora
+                        </span>
+                      )}
+                      {precio === undefined ? null : (
+                        <span className="numeros mt-0.5 block text-sm text-arena">
+                          Servicios desde {formatearPesos(precio)}
                         </span>
                       )}
                     </span>

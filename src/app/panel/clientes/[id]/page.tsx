@@ -17,6 +17,7 @@ import {
   nombresBarberos,
   obtenerCliente,
 } from "@/lib/datos/panel";
+import { servicioDelTurnoCercano } from "@/lib/datos/turnos";
 import { formatearPesos } from "@/lib/dinero";
 import { anioDe, tiempoRelativo } from "@/lib/fechas";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
@@ -52,6 +53,8 @@ export default async function PaginaCliente({
     nombresBarberos(),
   ]);
   if (!datos) notFound();
+  // Si viene por un turno con servicio, se cobra el precio de ese servicio.
+  const servicioTurno = await servicioDelTurnoCercano(id, perfil.id).catch(() => null);
 
   const { cliente, cortes, canjes, cortesVisibles, canjesTotal } = datos;
   const esDueno = perfil.es_dueno;
@@ -119,7 +122,7 @@ export default async function PaginaCliente({
         </div>
       </div>
 
-      <AccionesCliente cliente={cliente} />
+      <AccionesCliente cliente={cliente} servicioTurno={servicioTurno} />
 
       <section aria-labelledby="titulo-historial">
         <div className="mb-4 flex items-baseline justify-between gap-4">

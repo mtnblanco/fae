@@ -5,6 +5,7 @@ import type { MiTurno } from "@/lib/database.types";
 import { hoyISO } from "@/lib/fechas";
 import { RUTAS } from "@/lib/rutas";
 import { etiquetaDia, fechaTurno, horaTurno } from "@/lib/turnos/fechas";
+import { textoServicio } from "@/lib/turnos/servicios";
 import { cn } from "@/lib/utils";
 import { TarjetaMiTurno } from "./tarjeta-mi-turno";
 
@@ -39,6 +40,7 @@ export function TurnoCliente({
         turnoId={turno.id}
         cuando={cuandoCorto(turno.inicio)}
         barbero={turno.barbero_nombre}
+        servicio={textoServicio(turno.servicio_nombre, turno.servicio_precio)}
         sede={SEDE}
         puedeCancelar={turno.puede_cancelar}
         whatsapp={whatsappTurno(cliente, turno)}

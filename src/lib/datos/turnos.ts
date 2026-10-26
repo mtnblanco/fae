@@ -1,5 +1,6 @@
 import "server-only";
-import type { BarberoTurnos, FilaAgenda, MiTurno } from "@/lib/database.types";
+import type { BarberoTurnos, FilaAgenda, MiTurno, Servicio } from "@/lib/database.types";
+import { aNumero } from "@/lib/dinero";
 import { horaCorta, type Franja, type FranjaSemanal } from "@/lib/turnos/franjas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,84 @@ export async function miProximoTurno(): Promise<MiTurno | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("mi_proximo_turno");
   fallar(error, "No se pudo cargar tu turno");
-  return data?.[0] ?? null;
+  const turno = data?.[0];
+  if (!turno) return null;
+  // Sin la migración de servicios, las dos columnas no vienen.
+  return {
+    ...turno,
+    servicio_nombre: turno.servicio_nombre ?? null,
+    servicio_precio: aNumero(turno.servicio_precio),
+  };
+}
+
+// ─── Servicios ──────────────────────────────────────────────────────────────
+
+const COLUMNAS_SERVICIO = "id, barbero_id, nombre, descripcion, precio, activo, orden, creado_en";
+
+const aServicio = (s: Servicio): Servicio => ({ ...s, precio: aNumero(s.precio) ?? 0 });
+
+/**
+ * Servicios de un barbero, en su orden. El RLS decide: el cliente recibe solo
+ * los activos; el barbero, también sus pausados (y el dueño, los de todos).
+ */
+export async function serviciosDeBarbero(
+  barberoId: string,
+  { soloActivos = false }: { soloActivos?: boolean } = {},
+): Promise<Servicio[]> {
+  const supabase = await createClient();
+  let consulta = supabase.from("servicios").select(COLUMNAS_SERVICIO).eq("barbero_id", barberoId);
+  if (soloActivos) consulta = consulta.eq("activo", true);
+  const { data, error } = await consulta.order("orden").order("creado_en");
+  fallar(error, "No se pudieron cargar los servicios");
+  return (data ?? []).map(aServicio);
+}
+
+/** Precio más bajo de los servicios activos de cada barbero ("desde $ 8.000"). */
+export async function preciosDesde(): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("servicios")
+    .select("barbero_id, precio")
+    .eq("activo", true);
+  // Sin la migración de servicios, la lista de barberos se muestra igual.
+  if (error) return new Map();
+  const desde = new Map<string, number>();
+  for (const s of data ?? []) {
+    const precio = aNumero(s.precio);
+    if (precio === null) continue;
+    const actual = desde.get(s.barbero_id);
+    if (actual === undefined || precio < actual) desde.set(s.barbero_id, precio);
+  }
+  return desde;
+}
+
+/**
+ * Servicio del turno de un cliente cerca de ahora (3 h antes o después, como
+ * el aviso que vincula el corte con el turno), para precargar lo que se cobra.
+ * Prefiere el turno de quien carga el corte. El RLS limita: el empleado ve solo
+ * su agenda.
+ */
+export async function servicioDelTurnoCercano(
+  clienteId: string,
+  barberoId: string,
+): Promise<{ nombre: string; precio: number } | null> {
+  const supabase = await createClient();
+  const ahora = Date.now();
+  const { data, error } = await supabase
+    .from("turnos")
+    .select("barbero_id, inicio, servicio_nombre, servicio_precio")
+    .eq("cliente_id", clienteId)
+    .eq("tipo", "reserva")
+    .eq("estado", "reservado")
+    .not("servicio_precio", "is", null)
+    .gte("inicio", new Date(ahora - 3 * 3_600_000).toISOString())
+    .lte("inicio", new Date(ahora + 3 * 3_600_000).toISOString())
+    .order("inicio");
+  if (error || !data?.length) return null;
+  const turno = data.find((t) => t.barbero_id === barberoId) ?? data[0]!;
+  const precio = aNumero(turno.servicio_precio);
+  if (!turno.servicio_nombre || precio === null) return null;
+  return { nombre: turno.servicio_nombre, precio };
 }
 
 /**

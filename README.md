@@ -5,7 +5,7 @@ Web de fidelización para una barbería. Cada cliente tiene un **carnet digital*
 - **El barbero** da de alta a sus clientes, suma cortes (con un botón o escaneando el QR) anotando cuánto pagó cada cliente, y canjea premios.
 - Hay dos tipos de barbero: **el dueño** ve todo (la caja con lo que cobró cada barbero, los montos de todos los cortes), edita precios, configura la regla de premios y los descuentos y puede borrar clientes; **el empleado** atiende (busca, escanea, da de alta, suma cortes, canjea premios) y solo ve los cortes que cargó él. Opcionalmente puede haber un **admin**: ve y configura todo como el dueño, pero no atiende (no tiene agenda ni aparece al sacar turno).
 - **El cliente** entra con su teléfono y una contraseña, y ve su carnet, sus premios, los descuentos y su historial.
-- **Turnos online:** cada barbero carga sus horarios; el cliente elige barbero, día y horario y reserva desde el celular. El barbero ve su agenda del día (se actualiza sola) y recibe una notificación cuando le reservan o le cancelan un turno.
+- **Turnos online:** cada barbero carga sus horarios y sus servicios con sus precios (Corte, Corte + barba…); el cliente elige barbero, servicio (ve el precio), día y horario y reserva desde el celular. El barbero ve su agenda del día (se actualiza sola) y recibe una notificación cuando le reservan o le cancelan un turno.
 
 Todo funciona dentro de los planes gratuitos de **Supabase** (base de datos y usuarios) y **Vercel** (hosting). No se envían mails: el barbero le pasa los datos de acceso al cliente en persona o por WhatsApp.
 
@@ -73,7 +73,11 @@ Y este proyecto subido a un repositorio de GitHub (si no sabés cómo: en GitHub
    - [`supabase/migrations/20261023000100_premios_por_etapas.sql`](supabase/migrations/20261023000100_premios_por_etapas.sql)
    - [`supabase/migrations/20261023000200_turnos.sql`](supabase/migrations/20261023000200_turnos.sql)
    - [`supabase/migrations/20261024000100_admin.sql`](supabase/migrations/20261024000100_admin.sql)
-   - [`supabase/migrations/20261025000100_seguridad.sql`](supabase/migrations/20261025000100_seguridad.sql) (siempre la **última**: va después de todas las anteriores)
+   - [`supabase/migrations/20261025000100_seguridad.sql`](supabase/migrations/20261025000100_seguridad.sql) (va después de todas las anteriores)
+   - [`supabase/migrations/20261026000100_deshacer_del_dia.sql`](supabase/migrations/20261026000100_deshacer_del_dia.sql)
+   - [`supabase/migrations/20261027000100_fotos_descuentos.sql`](supabase/migrations/20261027000100_fotos_descuentos.sql)
+   - [`supabase/migrations/20261028000100_cancelar_6_horas.sql`](supabase/migrations/20261028000100_cancelar_6_horas.sql)
+   - [`supabase/migrations/20261029000100_servicios.sql`](supabase/migrations/20261029000100_servicios.sql)
 4. Para verificar: en **Table Editor** tienen que aparecer las tablas `perfiles`, `cortes`, `canjes`, `reglas` y `descuentos_asociados`, todas con el candado de **RLS enabled**.
 
 <details>
@@ -391,6 +395,22 @@ En el plan gratuito, Supabase pausa los proyectos que pasan **una semana sin uso
 
 Cuando el código trae una **migración nueva** (un archivo nuevo en `supabase/migrations/`), hay que aplicarla en Supabase **antes** de publicar el código nuevo. La migración nueva funciona con la versión anterior de la app, pero la app nueva necesita la migración.
 
+### Servicios y precios (`20261029000100_servicios.sql`)
+
+Qué hace: cada barbero carga **sus servicios con sus precios** (pueden ser distintos entre barberos) y, al sacar turno, el cliente elige uno y ve el precio. El servicio **no cambia la duración** del turno (la sigue marcando la franja del horario). Si un barbero no tiene servicios activos, se reserva como siempre, sin ese paso. El turno guarda una **copia** del nombre y el precio: si después cambiás el precio (o borrás el servicio), los turnos ya reservados no cambian. **No cambia ni borra datos.** Recrea `reservar_turno` (suma el servicio, opcional), `mi_proximo_turno` y `agenda_dia` (suman las columnas del servicio); la versión publicada de la app sigue funcionando mientras nadie cargue servicios.
+
+1. **Migración.** **SQL Editor → New query**, pegá **todo** [`supabase/migrations/20261029000100_servicios.sql`](supabase/migrations/20261029000100_servicios.sql) y tocá **Run**. Tiene que decir _Success_. Correlo **una sola vez**.
+2. **Verificá** en una consulta nueva:
+
+   ```sql
+   select count(*) from servicios;                                          -- 0
+   select count(*) from pg_proc where proname = 'reservar_turno';           -- 1
+   ```
+
+3. **Publicá el código nuevo enseguida** (merge a `main`). No hace falta cargar variables nuevas.
+4. **Cargá los servicios.** Cada barbero entra a **Agenda → Servicios** (o desde **Horarios → Servicios y precios**): **Nuevo servicio**, con nombre, precio y una descripción corta opcional. Con el interruptor se **pausa** (los clientes dejan de verlo) y con el tacho se borra. El dueño puede cargar o corregir los del empleado con el selector **Vos | Nombre**.
+5. Probalo: con un cliente de prueba, **Sacá turno** muestra "Servicios desde $ …" en cada barbero; al elegir uno aparece **¿Qué te hacés?** con sus servicios y precios. El servicio se ve en la confirmación, en la tarjeta del carnet, en la **Agenda** y en el aviso al barbero. Al abrir la ficha del cliente para sumarle el corte, el monto viene precargado con el precio del servicio del turno.
+
 ### Seguridad (`20261025000100_seguridad.sql`)
 
 Qué hace (detalle en [`DECISIONES.md`](DECISIONES.md#seguridad-migración-20261025000100_seguridadsql)): cierra las sesiones al resetear una contraseña y pide la temporal en el primer ingreso; le quita los permisos en el acto a un empleado bloqueado; limita los intentos de login; acepta notificaciones solo de servicios push reales (hasta 10 dispositivos por barbero) y limita el spam de reservas; agrega Content-Security-Policy y HSTS. **No cambia ni borra datos de clientes, cortes ni turnos.** Borra las suscripciones push que no son de un servicio push real (no le llegaban a nadie) y deja como mucho 10 por barbero. La versión publicada de la app sigue funcionando con la base migrada.
@@ -543,6 +563,6 @@ Qué hace: suma los **turnos online**. Agrega tablas nuevas (horarios de cada ba
 8. **Activá las notificaciones** en el celular de cada barbero: instalá la web (paso [10](#10-instalar-el-carnet-en-el-celular)), abrila desde el ícono, entrá a **Agenda** y tocá **Activar notificaciones** → **Permitir**. En iPhone, primero agregala a inicio (Compartir → Agregar a inicio) y abrila desde ahí.
 9. Probalo: con un cliente de prueba, en el carnet tocá **Sacá turno**, elegí barbero, día y horario, y confirmá. El turno aparece en la agenda y al barbero le llega el aviso. Cancelalo desde el carnet.
 
-Reglas de los turnos: se reservan con **al menos 1 hora** de anticipación y **hasta 14 días** adelante; **1 turno a la vez** por cliente; el cliente cancela desde la web **hasta 6 horas antes** (con 6 horas o menos, ya no) (después, le aparece el botón de WhatsApp). El barbero, desde la agenda, puede cancelar, escribir por WhatsApp, **reservar para un cliente** (por ejemplo, alguien que llamó) y **bloquear** un horario.
+Reglas de los turnos: se reservan con **al menos 1 hora** de anticipación y **hasta 14 días** adelante; **1 turno a la vez** por cliente; el cliente cancela desde la web **hasta 6 horas antes** (con 6 horas o menos, ya no) (después, le aparece el botón de WhatsApp). Si el barbero cargó servicios (**Agenda → Servicios**), el cliente elige uno al reservar y ve su precio; ver [Servicios y precios](#servicios-y-precios-20261029000100_serviciossql). El barbero, desde la agenda, puede cancelar, escribir por WhatsApp, **reservar para un cliente** (por ejemplo, alguien que llamó) y **bloquear** un horario.
 
 > Si un empleado deja de trabajar, [`supabase/quitar-empleado.sql`](supabase/quitar-empleado.sql) ahora también borra su horario, así deja de ofrecerse. Sus turnos ya reservados no se borran: revisalos en la agenda.

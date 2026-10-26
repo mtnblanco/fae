@@ -249,6 +249,27 @@ export type Database = {
           cancelado_en: string | null;
           solicitud_id: string | null;
           created_at: string;
+          /** Servicio elegido al reservar (null si no eligió o si se borró). */
+          servicio_id: string | null;
+          /** Copia del nombre y el precio al reservar: no cambian si editan el servicio. */
+          servicio_nombre: string | null;
+          servicio_precio: number | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      // ─── Servicios y precios (migración 20261029000100) ───
+      servicios: {
+        Row: {
+          id: string;
+          barbero_id: string;
+          nombre: string;
+          descripcion: string | null;
+          precio: number;
+          activo: boolean;
+          orden: number;
+          creado_en: string;
         };
         Insert: never;
         Update: never;
@@ -369,7 +390,13 @@ export type Database = {
         Returns: { id: string; nombre: string; es_dueno: boolean; proximo_libre: string | null }[];
       };
       reservar_turno: {
-        Args: { p_barbero: string; p_inicio: string; p_solicitud_id?: string };
+        Args: {
+          p_barbero: string;
+          p_inicio: string;
+          p_solicitud_id?: string;
+          /** Obligatorio si el barbero tiene servicios activos. */
+          p_servicio?: string | null;
+        };
         Returns: Database["public"]["Tables"]["turnos"]["Row"];
       };
       cancelar_turno: {
@@ -413,6 +440,8 @@ export type Database = {
           inicio: string;
           fin: string;
           puede_cancelar: boolean;
+          servicio_nombre: string | null;
+          servicio_precio: number | null;
         }[];
       };
       agenda_dia: {
@@ -427,6 +456,8 @@ export type Database = {
           cliente_nombre: string | null;
           cliente_telefono: string | null;
           nota: string | null;
+          servicio_nombre: string | null;
+          servicio_precio: number | null;
         }[];
       };
       guardar_suscripcion_push: {
@@ -434,6 +465,30 @@ export type Database = {
         Returns: undefined;
       };
       borrar_suscripcion_push: { Args: { p_endpoint: string }; Returns: undefined };
+      // ─── Servicios (migración 20261029000100) ───
+      crear_servicio: {
+        Args: {
+          p_barbero: string;
+          p_nombre: string;
+          p_precio: number;
+          p_descripcion?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["servicios"]["Row"];
+      };
+      editar_servicio: {
+        Args: {
+          p_servicio: string;
+          p_nombre: string;
+          p_precio: number;
+          p_descripcion?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["servicios"]["Row"];
+      };
+      activar_servicio: {
+        Args: { p_servicio: string; p_activo: boolean };
+        Returns: Database["public"]["Tables"]["servicios"]["Row"];
+      };
+      borrar_servicio: { Args: { p_servicio: string }; Returns: undefined };
       // ─── Seguridad (migración 20261025000100; solo service_role) ───
       revocar_sesiones: { Args: { p_usuario: string }; Returns: number };
       consumir_intento: {
@@ -470,3 +525,4 @@ export type DiaEspecial = Tabla<"dias_especiales">;
 export type FilaAgenda = Public["Functions"]["agenda_dia"]["Returns"][number];
 export type BarberoTurnos = Public["Functions"]["barberos_turnos"]["Returns"][number];
 export type MiTurno = Public["Functions"]["mi_proximo_turno"]["Returns"][number];
+export type Servicio = Tabla<"servicios">;

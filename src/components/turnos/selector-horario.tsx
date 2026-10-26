@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { reservarTurno } from "@/app/turnos/acciones";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
+import { formatearPesos } from "@/lib/dinero";
 import {
   etiquetaDia,
   momentoDelDia,
@@ -14,7 +15,9 @@ import {
   partesDia,
   type MomentoDelDia,
 } from "@/lib/turnos/fechas";
+import { textoServicio } from "@/lib/turnos/servicios";
 import { cn } from "@/lib/utils";
+import { SelectorServicio, type ServicioTurno } from "./selector-servicio";
 import { TiraDias } from "./tira-dias";
 
 export type HorarioLibre = { inicio: string; fecha: string; hora: string; duracion: number };
@@ -25,19 +28,25 @@ type Props = {
   hoy: string;
   dias: string[];
   horarios: HorarioLibre[];
+  /** Servicios activos del barbero. Si hay, el cliente tiene que elegir uno. */
+  servicios: ServicioTurno[];
   sede: string;
   whatsapp: string | null;
 };
 
 const MOMENTOS: MomentoDelDia[] = ["Mañana", "Tarde", "Noche"];
 
-/** Día (tira deslizable) → horario (chips) → barra fija para confirmar. */
+/**
+ * Servicio (si el barbero cargó) → día (tira deslizable) → horario (chips) →
+ * barra fija para confirmar.
+ */
 export function SelectorHorario({
   barberoId,
   barberoNombre,
   hoy,
   dias,
   horarios,
+  servicios,
   sede,
   whatsapp,
 }: Props) {
@@ -57,6 +66,14 @@ export function SelectorHorario({
 
   const [dia, setDia] = useState(primerDiaConHorarios ?? dias[0]!);
   const [elegido, setElegido] = useState<string | null>(null);
+  // Con un solo servicio, ya viene elegido.
+  const [servicioId, setServicioId] = useState<string | null>(
+    servicios.length === 1 ? servicios[0]!.id : null,
+  );
+  const pideServicio = servicios.length > 0;
+  // Si el servicio elegido dejó de ofrecerse (y se recargó la lista), se deselecciona solo.
+  const servicio = servicios.find((s) => s.id === servicioId) ?? null;
+  const eligiendoServicio = pideServicio && !servicio;
 
   const delDia = porDia.get(dia) ?? [];
   // Si el horario elegido se ocupó (y se recargó la lista), se deselecciona solo.
@@ -73,9 +90,14 @@ export function SelectorHorario({
   }
 
   const confirmar = () => {
-    if (!horario) return;
+    if (!horario || eligiendoServicio) return;
     ejecutar(async (solicitudId) => {
-      const r = await reservarTurno({ barberoId, inicio: horario.inicio, solicitudId });
+      const r = await reservarTurno({
+        barberoId,
+        inicio: horario.inicio,
+        servicioId: servicio?.id ?? null,
+        solicitudId,
+      });
       if (r.ok) {
         router.push("/turnos/confirmado");
         return;
@@ -108,8 +130,42 @@ export function SelectorHorario({
     );
   }
 
+  if (eligiendoServicio) {
+    return (
+      <section aria-labelledby="titulo-servicio" className="grid grid-cols-1 gap-3">
+        <h2 id="titulo-servicio" className="font-sans text-[0.9375rem] font-medium text-marfil">
+          ¿Qué te hacés?
+        </h2>
+        <SelectorServicio servicios={servicios} elegido={servicioId} onElegir={setServicioId} />
+        <p className="text-[0.8125rem] text-arena">
+          Precios de {barberoNombre}. Después elegís el día y el horario.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <>
+      {servicio ? (
+        <div className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-hierro bg-ebano px-4 py-2">
+          <p className="min-w-0 text-[0.9375rem]">
+            <span className="block truncate text-marfil">{servicio.nombre}</span>
+            <span className="numeros block text-sm text-oro-claro">
+              {formatearPesos(servicio.precio)}
+            </span>
+          </p>
+          {servicios.length > 1 ? (
+            <Button
+              variant="ghost"
+              className="-mr-2 shrink-0 text-oro-claro"
+              onClick={() => setServicioId(null)}
+            >
+              Cambiar
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-3">
         <p className="etiqueta text-arena" aria-live="polite">
           {partesDia(dia).mesLargo}
@@ -178,7 +234,7 @@ export function SelectorHorario({
       )}
 
       {/* Espacio para que la barra fija no tape el último horario. */}
-      {horario ? <div aria-hidden className="h-36" /> : null}
+      {horario ? <div aria-hidden className={servicio ? "h-44" : "h-36"} /> : null}
 
       {horario ? (
         <div
@@ -189,6 +245,11 @@ export function SelectorHorario({
             <p className="numeros text-center text-[0.9375rem] text-marfil" aria-live="polite">
               {etiquetaDia(horario.fecha, hoy)} · {horario.hora} · con {barberoNombre}
               <span className="text-arena"> · {horario.duracion} min</span>
+              {servicio ? (
+                <span className="block text-oro-claro">
+                  {textoServicio(servicio.nombre, servicio.precio)}
+                </span>
+              ) : null}
             </p>
             <Button
               variant="neon"

@@ -7,7 +7,12 @@ import { SelectorHorario, type HorarioLibre } from "@/components/turnos/selector
 import { SEDE } from "@/components/turnos/turno-cliente";
 import { sitio } from "@/config/site";
 import { requireCliente } from "@/lib/auth";
-import { barberosConTurnos, horariosLibres, miProximoTurno } from "@/lib/datos/turnos";
+import {
+  barberosConTurnos,
+  horariosLibres,
+  miProximoTurno,
+  serviciosDeBarbero,
+} from "@/lib/datos/turnos";
 import { hoyISO } from "@/lib/fechas";
 import { RUTAS } from "@/lib/rutas";
 import { aInstante, fechaTurno, horaTurno, proximosDias } from "@/lib/turnos/fechas";
@@ -18,10 +23,11 @@ export default async function PaginaTurnoConBarbero({ params }: PageProps<"/turn
   if (!z.uuid().safeParse(id).success) notFound();
   await requireCliente();
 
-  const [turno, barberos, libres] = await Promise.all([
+  const [turno, barberos, libres, servicios] = await Promise.all([
     miProximoTurno(),
     barberosConTurnos(),
     horariosLibres(id),
+    serviciosDeBarbero(id, { soloActivos: true }),
   ]);
   if (turno) redirect(RUTAS.turnos);
   const barbero = barberos.find((b) => b.id === id);
@@ -58,6 +64,12 @@ export default async function PaginaTurnoConBarbero({ params }: PageProps<"/turn
         hoy={hoy}
         dias={proximosDias(hoy, TURNOS.diasVentana)}
         horarios={horarios}
+        servicios={servicios.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          descripcion: s.descripcion,
+          precio: s.precio,
+        }))}
         sede={SEDE}
         whatsapp={sitio.whatsapp ? `https://wa.me/${sitio.whatsapp}` : null}
       />

@@ -14,6 +14,7 @@ export const RUTAS = {
   turnos: "/turnos",
   agenda: "/panel/agenda",
   horarios: "/panel/agenda/horarios",
+  servicios: "/panel/agenda/servicios",
 } as const;
 
 export const rutaCliente = (id: string) => `${RUTAS.clientes}/${id}`;

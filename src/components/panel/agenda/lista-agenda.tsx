@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
 import { rutaCliente } from "@/lib/rutas";
 import { formatearTelefono, linkWhatsApp } from "@/lib/telefono";
+import { textoServicio } from "@/lib/turnos/servicios";
 import { cn } from "@/lib/utils";
 import { Hoja } from "./hoja";
 
@@ -34,6 +35,9 @@ export type FilaVista = {
   clienteNombre: string | null;
   clienteTelefono: string | null;
   nota: string | null;
+  /** Servicio elegido al reservar (copia: nombre y precio de ese momento). */
+  servicioNombre: string | null;
+  servicioPrecio: number | null;
   barberoId: string;
   /** Solo en la vista "Ambos". */
   barberoNombre: string | null;
@@ -106,6 +110,7 @@ function Renglon({ fila, onAbrir }: { fila: FilaVista; onAbrir: () => void }) {
   }
 
   const atendido = fila.estado === "atendido";
+  const servicio = textoServicio(fila.servicioNombre, fila.servicioPrecio);
   return (
     <button
       type="button"
@@ -126,6 +131,9 @@ function Renglon({ fila, onAbrir }: { fila: FilaVista; onAbrir: () => void }) {
             `${fila.hora} a ${fila.horaFin} · ${formatearTelefono(fila.clienteTelefono)}`
           )}
         </span>
+        {servicio ? (
+          <span className="numeros block truncate text-sm text-oro-claro">{servicio}</span>
+        ) : null}
       </span>
       {barbero}
     </button>
@@ -153,6 +161,7 @@ function HojaTurno({
   const nombre = primerNombre(fila.clienteNombre);
   const telefono = fila.clienteTelefono ?? "";
   const cuando = `${dia} a las ${fila.hora}`;
+  const servicio = textoServicio(fila.servicioNombre, fila.servicioPrecio);
   const waRecordar = linkWhatsApp(
     telefono,
     `Hola ${nombre}, te escribo de FaeBarberShop por tu turno ${cuando}.`,
@@ -183,9 +192,12 @@ function HojaTurno({
       onAbiertaChange={(a) => !a && onCerrar()}
       titulo={`${fila.hora} · ${fila.clienteNombre}`}
       descripcion={
-        fila.estado === "atendido"
-          ? "Atendido: el corte ya está sumado."
-          : `${fila.hora} a ${fila.horaFin} · ${formatearTelefono(telefono)}`
+        <>
+          {fila.estado === "atendido"
+            ? "Atendido: el corte ya está sumado."
+            : `${fila.hora} a ${fila.horaFin} · ${formatearTelefono(telefono)}`}
+          {servicio ? <span className="numeros mt-1 block text-oro-claro">{servicio}</span> : null}
+        </>
       }
     >
       <div className="grid grid-cols-1 gap-2.5">

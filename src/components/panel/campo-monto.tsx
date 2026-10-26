@@ -11,6 +11,8 @@ type Props = {
   invalido?: boolean;
   /** Si el cliente no tiene precio habitual, se avisa debajo. */
   sinPrecio?: boolean;
+  /** Aclaración debajo (por ejemplo, de dónde sale el precio precargado). */
+  nota?: string;
   disabled?: boolean;
   className?: string;
 };
@@ -19,14 +21,22 @@ type Props = {
  * Lo que se le cobra al cliente, precargado con su precio habitual. Se puede
  * tocar y cambiar en el momento (teclado numérico); vacío = sin monto.
  */
-export function CampoMonto({ valor, onCambio, invalido, sinPrecio, disabled, className }: Props) {
+export function CampoMonto({
+  valor,
+  onCambio,
+  invalido,
+  sinPrecio,
+  nota,
+  disabled,
+  className,
+}: Props) {
   const id = useId();
   const idAyuda = `${id}-ayuda`;
   const ayuda = invalido
     ? MENSAJE_MONTO_INVALIDO
     : sinPrecio && !valor
       ? "No tiene precio cargado: escribí cuánto te pagó."
-      : null;
+      : (nota ?? null);
 
   return (
     <div className={cn("rounded-xl border border-hierro bg-ebano px-4 py-3", className)}>

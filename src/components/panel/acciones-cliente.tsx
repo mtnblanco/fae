@@ -33,16 +33,18 @@ type Props = {
     premios: PremioEtapa[];
     precio_habitual: number | null;
   };
+  /** Servicio del turno de ahora (si reservó con servicio): se cobra su precio. */
+  servicioTurno?: { nombre: string; precio: number } | null;
 };
 
 /**
  * Avance de la tarjeta del cliente y acciones del barbero: sumar corte (con el
  * monto precargado con su precio habitual) y canjear premio (eligiendo cuál).
  */
-export function AccionesCliente({ cliente }: Props) {
+export function AccionesCliente({ cliente, servicioTurno }: Props) {
   const p = calcularProgreso(cliente);
   const primerNombre = cliente.nombre.split(" ")[0];
-  const sumar = useSumarCorte(cliente.id, cliente.precio_habitual);
+  const sumar = useSumarCorte(cliente.id, servicioTurno?.precio ?? cliente.precio_habitual);
   const canjear = useAccionUnica();
   const [festejo, setFestejo] = useState(0);
 
@@ -128,8 +130,9 @@ export function AccionesCliente({ cliente }: Props) {
         valor={sumar.texto}
         onCambio={sumar.cambiar}
         invalido={sumar.invalido}
-        sinPrecio={cliente.precio_habitual === null}
+        sinPrecio={!servicioTurno && cliente.precio_habitual === null}
         disabled={sumar.pendiente}
+        nota={servicioTurno ? `Precio de su turno: ${servicioTurno.nombre}.` : undefined}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

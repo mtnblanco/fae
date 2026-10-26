@@ -16,7 +16,7 @@ export async function GET() {
     fin: aInstante(turno.fin),
     titulo: `Turno en ${sitio.nombre}`,
     lugar: `${sitio.sedes[0] ?? ""}, ${sitio.ciudad}`,
-    descripcion: `Con ${turno.barbero_nombre}. Si no podés venir, cancelalo desde la web o avisá por WhatsApp.`,
+    descripcion: `${turno.servicio_nombre ? `${turno.servicio_nombre}, con` : "Con"} ${turno.barbero_nombre}. Si no podés venir, cancelalo desde la web o avisá por WhatsApp.`,
   });
   return new Response(ics, {
     headers: {

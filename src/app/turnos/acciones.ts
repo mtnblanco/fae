@@ -15,8 +15,19 @@ import { cuandoTurno, fechaTurno } from "@/lib/turnos/fechas";
 const reservaSchema = z.object({
   barberoId: z.uuid(),
   inicio: z.string().min(10).max(40),
+  /** Obligatorio si el barbero tiene servicios (lo valida la base). */
+  servicioId: z.uuid().nullable(),
   solicitudId: z.uuid(),
 });
+
+/** Errores después de los cuales la pantalla vuelve a cargar horarios y servicios. */
+const RECARGAR = [
+  "horario_ocupado",
+  "horario_invalido",
+  "turno_muy_pronto",
+  "servicio_no_disponible",
+  "servicio_requerido",
+];
 
 /** Si falla porque el horario se ocupó, la pantalla vuelve a cargar los horarios. */
 export type ResultadoReserva =
@@ -33,30 +44,30 @@ const nombreCorto = (nombre: string) => nombre.split(" ")[0] ?? nombre;
 export async function reservarTurno(datos: {
   barberoId: string;
   inicio: string;
+  servicioId: string | null;
   solicitudId: string;
 }): Promise<ResultadoReserva> {
   const { perfil } = await requireCliente();
   const parse = reservaSchema.safeParse(datos);
   if (!parse.success) return { ok: false, error: "Elegí un horario.", recargar: false };
-  const { barberoId, inicio, solicitudId } = parse.data;
+  const { barberoId, inicio, servicioId, solicitudId } = parse.data;
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("reservar_turno", {
     p_barbero: barberoId,
     p_inicio: inicio,
     p_solicitud_id: solicitudId,
+    p_servicio: servicioId,
   });
   if (error || !data) {
-    const recargar = ["horario_ocupado", "horario_invalido", "turno_muy_pronto"].includes(
-      error?.message ?? "",
-    );
+    const recargar = RECARGAR.includes(error?.message ?? "");
     return { ok: false, error: mensajeDeErrorTurno(error), recargar };
   }
 
   after(() =>
     avisarBarbero(data.barbero_id, {
       titulo: "Nuevo turno",
-      cuerpo: `${cuandoTurno(data.inicio, hoyISO())} · ${perfil.nombre}`,
+      cuerpo: `${cuandoTurno(data.inicio, hoyISO())} · ${perfil.nombre}${data.servicio_nombre ? ` · ${data.servicio_nombre}` : ""}`,
       url: `${RUTAS.agenda}?fecha=${fechaTurno(data.inicio)}`,
       // Por cliente: si reserva y cancela varias veces, los avisos se reemplazan.
       tag: `cliente-${perfil.id}`,

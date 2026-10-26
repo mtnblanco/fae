@@ -7,6 +7,7 @@ import { requireCliente } from "@/lib/auth";
 import { miProximoTurno } from "@/lib/datos/turnos";
 import { RUTAS } from "@/lib/rutas";
 import { diaLargo, fechaTurno, horaTurno } from "@/lib/turnos/fechas";
+import { textoServicio } from "@/lib/turnos/servicios";
 
 export const metadata = { title: "Turno confirmado" };
 
@@ -15,6 +16,7 @@ export default async function PaginaTurnoConfirmado() {
   const turno = await miProximoTurno();
   if (!turno) redirect(RUTAS.turnos);
   const nombre = perfil.nombre.split(" ")[0];
+  const servicio = textoServicio(turno.servicio_nombre, turno.servicio_precio);
 
   return (
     <div className="grid grid-cols-1 gap-6 pt-6 text-center">
@@ -29,6 +31,9 @@ export default async function PaginaTurnoConfirmado() {
         <p className="mt-2 text-[0.9375rem] text-arena">
           con <span className="text-marfil">{turno.barbero_nombre}</span> · {SEDE}
         </p>
+        {servicio ? (
+          <p className="numeros mt-1 text-[0.9375rem] text-oro-claro">{servicio}</p>
+        ) : null}
       </div>
       <div className="grid grid-cols-1 gap-3">
         <Button asChild variant="oro" size="lg" className="h-14">

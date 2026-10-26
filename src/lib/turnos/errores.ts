@@ -23,6 +23,8 @@ const MENSAJES_TURNOS: Record<string, string> = {
   demasiadas_cancelaciones:
     "Ya cancelaste 3 turnos en las últimas 24 horas. Para cancelar este, escribinos por WhatsApp.",
   cambio_password_pendiente: "Antes de seguir, elegí tu contraseña nueva.",
+  servicio_requerido: "Elegí qué te vas a hacer antes de confirmar.",
+  servicio_no_disponible: "Ese servicio ya no está disponible. Elegí otro.",
 };
 
 export function mensajeDeErrorTurno(error: { message?: string; code?: string } | null | undefined) {

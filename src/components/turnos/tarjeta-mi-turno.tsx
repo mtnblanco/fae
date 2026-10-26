@@ -26,6 +26,8 @@ type Props = {
   /** "Vie 24 de oct · 18:30" */
   cuando: string;
   barbero: string;
+  /** "Corte + barba · $ 14.000", o null si el turno no tiene servicio. */
+  servicio?: string | null;
   sede: string;
   puedeCancelar: boolean;
   /** Link de WhatsApp de la barbería con el mensaje armado. */
@@ -38,6 +40,7 @@ export function TarjetaMiTurno({
   turnoId,
   cuando,
   barbero,
+  servicio,
   sede,
   puedeCancelar,
   whatsapp,
@@ -71,6 +74,7 @@ export function TarjetaMiTurno({
       <p className="mt-1 text-[0.9375rem] text-arena">
         con <span className="text-marfil">{barbero}</span> · {sede}
       </p>
+      {servicio ? <p className="numeros mt-1 text-[0.9375rem] text-oro-claro">{servicio}</p> : null}
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button asChild variant="outline" className="h-12">

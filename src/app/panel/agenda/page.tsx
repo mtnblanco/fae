@@ -1,4 +1,4 @@
-import { CalendarDays, Clock } from "lucide-react";
+import { CalendarDays, Clock, Scissors } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
@@ -11,6 +11,7 @@ import { SelectorBarbero } from "@/components/panel/agenda/selector-barbero";
 import { Button } from "@/components/ui/button";
 import { requireBarbero } from "@/lib/auth";
 import { agendaDelDia, diasConTurnos, listarBarberos } from "@/lib/datos/turnos";
+import { aNumero } from "@/lib/dinero";
 import { hoyISO } from "@/lib/fechas";
 import { RUTAS } from "@/lib/rutas";
 import {
@@ -97,6 +98,8 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
         clienteNombre: f.cliente_nombre,
         clienteTelefono: f.cliente_telefono,
         nota: f.nota,
+        servicioNombre: f.servicio_nombre ?? null,
+        servicioPrecio: aNumero(f.servicio_precio),
         barberoId: mostrados[i]!.id,
         barberoNombre: ambos ? mostrados[i]!.nombre : null,
       })),
@@ -106,8 +109,9 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
   const reservas = filas.filter((f) => f.tipo === "reserva").length;
   const libres = filas.filter((f) => f.tipo === "libre").length;
   const unico = mostrados.length === 1 ? mostrados[0]! : null;
-  const linkHorarios =
-    unico && unico.id !== userId ? `${RUTAS.horarios}?barbero=${unico.id}` : RUTAS.horarios;
+  const deOtro = unico && unico.id !== userId ? `?barbero=${unico.id}` : "";
+  const linkHorarios = `${RUTAS.horarios}${deOtro}`;
+  const linkServicios = `${RUTAS.servicios}${deOtro}`;
 
   return (
     <div className="grid grid-cols-1 gap-5">
@@ -116,12 +120,20 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
         className="mb-0 sm:mb-0"
         titulo="Agenda"
         acciones={
-          <Button asChild variant="outline" size="sm" className="h-10">
-            <Link href={linkHorarios}>
-              <Clock aria-hidden />
-              Horarios
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="sm" className="h-11">
+              <Link href={linkServicios}>
+                <Scissors aria-hidden />
+                Servicios
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="h-11">
+              <Link href={linkHorarios}>
+                <Clock aria-hidden />
+                Horarios
+              </Link>
+            </Button>
+          </>
         }
       />
 

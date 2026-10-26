@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Scissors } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
@@ -6,6 +6,7 @@ import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { DiasEspeciales } from "@/components/panel/agenda/dias-especiales";
 import { EditorSemanal } from "@/components/panel/agenda/editor-semanal";
 import { SelectorBarbero } from "@/components/panel/agenda/selector-barbero";
+import { Button } from "@/components/ui/button";
 import { requireBarbero } from "@/lib/auth";
 import { diasEspeciales, horarioSemanal, listarBarberos } from "@/lib/datos/turnos";
 import { hoyISO } from "@/lib/fechas";
@@ -65,6 +66,14 @@ export default async function PaginaHorarios({
         titulo={propio ? "Mis horarios" : `Horarios de ${barbero.nombre.split(" ")[0]}`}
         descripcion="Los turnos arrancan al inicio de cada franja. Cambiar el horario no toca los turnos ya reservados."
         volver={volver}
+        acciones={
+          <Button asChild variant="outline" size="sm" className="h-11">
+            <Link href={propio ? RUTAS.servicios : `${RUTAS.servicios}?barbero=${barbero.id}`}>
+              <Scissors aria-hidden />
+              Servicios y precios
+            </Link>
+          </Button>
+        }
       />
 
       {perfil.es_dueno && barberos.length > 1 ? (

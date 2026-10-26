@@ -155,6 +155,29 @@ export const fotoDescuentoSchema = z
   .max(FOTO_MAX_BYTES, { error: "La foto es muy pesada (máximo 400 KB)." })
   .mime([...TIPOS_FOTO], { error: "La foto tiene que ser JPG o WebP." });
 
+// ─── Servicios del barbero ──────────────────────────────────────────────────
+// Los mismos límites que valida la base (crear_servicio / editar_servicio).
+const MSJ_PRECIO_SERVICIO = "Ingresá el precio, por ejemplo 8.000.";
+
+export const servicioSchema = z.object({
+  id: idSchema.optional(),
+  barberoId: idSchema,
+  nombre: z
+    .string()
+    .trim()
+    .min(2, { error: "Ingresá el nombre del servicio." })
+    .max(60, { error: "El nombre puede tener hasta 60 caracteres." })
+    .transform((s) => s.replace(/\s+/g, " ")),
+  descripcion: z
+    .string()
+    .trim()
+    .max(140, { error: "La descripción puede tener hasta 140 caracteres." })
+    .transform((s) => s || null),
+  precio: montoTextoSchema.pipe(
+    z.number({ error: MSJ_PRECIO_SERVICIO }).positive({ error: MSJ_PRECIO_SERVICIO }),
+  ),
+});
+
 // ─── Regla de premios (etapas) ──────────────────────────────────────────────
 // Los mismos límites que valida la base (guardar_regla_etapas).
 export const CORTES_MIN = 1;
