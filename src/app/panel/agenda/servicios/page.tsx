@@ -4,11 +4,12 @@ import Link from "next/link";
 import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { AccionesServicio } from "@/components/panel/agenda/acciones-servicio";
+import { DialogoPrecioMensualidad } from "@/components/panel/agenda/dialogo-precio-mensualidad";
 import { DialogoServicio } from "@/components/panel/agenda/dialogo-servicio";
 import { SelectorBarbero } from "@/components/panel/agenda/selector-barbero";
 import { Button } from "@/components/ui/button";
 import { requireBarbero } from "@/lib/auth";
-import { listarBarberos, serviciosDeBarbero } from "@/lib/datos/turnos";
+import { listarBarberos, precioMensualidadDe, serviciosDeBarbero } from "@/lib/datos/turnos";
 import { formatearPesos } from "@/lib/dinero";
 import { RUTAS } from "@/lib/rutas";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,10 @@ export default async function PaginaServicios({
   }
 
   const propio = barbero.id === userId;
-  const servicios = await serviciosDeBarbero(barbero.id);
+  const [servicios, precioMensualidad] = await Promise.all([
+    serviciosDeBarbero(barbero.id),
+    precioMensualidadDe(barbero.id),
+  ]);
   const activos = servicios.filter((s) => s.activo).length;
 
   const botonNuevo = (
@@ -92,6 +96,13 @@ export default async function PaginaServicios({
           elegido={barbero.id}
         />
       ) : null}
+
+      <DialogoPrecioMensualidad
+        key={`mensualidad-${barbero.id}`}
+        barberoId={barbero.id}
+        precio={precioMensualidad}
+        propio={propio}
+      />
 
       {servicios.length === 0 ? (
         <EstadoVacio

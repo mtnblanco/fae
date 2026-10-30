@@ -114,6 +114,10 @@ type Props = {
   total: number;
   /** En qué cortes hay premio (las etapas). Por defecto, solo el último. */
   premios?: number[];
+  /** Sin premios (la tarjeta de la mensualidad). */
+  sinPremio?: boolean;
+  /** Para lectores de pantalla (por defecto, "N de M sellos"). */
+  etiqueta?: string;
   /** Sellos llenos. */
   llenos: number;
   /** Cuántos de los últimos sellos llenos se "estampan" con animación. */
@@ -125,6 +129,8 @@ type Props = {
 export function GrillaSellos({
   total,
   premios,
+  sinPremio = false,
+  etiqueta,
   llenos,
   nuevos = 0,
   tamano = "md",
@@ -133,15 +139,18 @@ export function GrillaSellos({
   const reducirMovimiento = useReducedMotion();
   const primeroNuevo = llenos - nuevos;
   const columnas = columnasPara(total);
-  const conPremio = new Set(premios?.length ? premios : [total]);
+  const conPremio = new Set(sinPremio ? [] : premios?.length ? premios : [total]);
   const etapas = [...conPremio].sort((a, b) => a - b);
 
   return (
     <ol
       role="img"
-      aria-label={`${llenos} de ${total} sellos${
-        etapas.length > 1 ? `. Premios en los cortes ${etapas.join(", ")}` : ""
-      }`}
+      aria-label={
+        etiqueta ??
+        `${llenos} de ${total} sellos${
+          etapas.length > 1 ? `. Premios en los cortes ${etapas.join(", ")}` : ""
+        }`
+      }
       className={cn(
         "grid w-full gap-(--hueco) [--hueco:0.625rem] sm:[--hueco:0.75rem]",
         TAMANOS[tamano],

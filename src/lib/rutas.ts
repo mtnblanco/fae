@@ -11,6 +11,8 @@ export const RUTAS = {
   descuentos: "/panel/descuentos",
   reglas: "/panel/reglas",
   caja: "/panel/caja",
+  cajaExportar: "/panel/caja/exportar",
+  registrar: "/panel/registrar",
   turnos: "/turnos",
   agenda: "/panel/agenda",
   horarios: "/panel/agenda/horarios",

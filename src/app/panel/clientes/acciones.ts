@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { barberoActivoEnBase, requireBarbero, requireDueno } from "@/lib/auth";
+import type { MedioPago } from "@/lib/database.types";
 import { clienteParaEscaneo } from "@/lib/datos/panel";
 import { aNumero, formatearPesos } from "@/lib/dinero";
 import { ERROR_GENERICO, esDuplicado, mensajeDeErrorDb } from "@/lib/errores";
@@ -20,6 +21,7 @@ import {
   editarClienteSchema,
   erroresDeCampo,
   idSchema,
+  medioPagoSchema,
   montoSchema,
   precioClienteSchema,
   resetPasswordSchema,
@@ -255,24 +257,41 @@ export async function eliminarCliente(id: string): Promise<Resultado> {
 // ─── Cortes y premios (con la sesión del barbero: valida la base) ───────────
 export type EstadoCliente = NonNullable<Awaited<ReturnType<typeof clienteParaEscaneo>>>;
 
-/** Suma un corte con lo que pagó el cliente (`monto` null = sin monto). */
+/**
+ * Suma un corte con lo que pagó el cliente (`monto` null = sin monto) y cómo
+ * pagó. Si hay algo que cobrar, el medio de pago es obligatorio.
+ */
 export async function sumarCorte(
   clienteId: string,
   solicitudId: string,
   monto: number | null,
-): Promise<Resultado<{ corteId: string; monto: number | null; cliente: EstadoCliente | null }>> {
+  medio: MedioPago | null,
+): Promise<
+  Resultado<{
+    corteId: string;
+    monto: number | null;
+    medio: MedioPago | null;
+    cliente: EstadoCliente | null;
+  }>
+> {
   await requireBarbero();
   if (!idSchema.safeParse(clienteId).success || !idSchema.safeParse(solicitudId).success) {
     return fallo("Solicitud inválida.");
   }
   const montoValido = montoSchema.safeParse(monto);
   if (!montoValido.success) return fallo(mensajeDeErrorDb({ message: "monto_invalido" }));
+  const cobra = montoValido.data !== null && montoValido.data > 0;
+  const medioValido = medioPagoSchema.nullable().safeParse(cobra ? medio : null);
+  if (!medioValido.success || (cobra && !medioValido.data)) {
+    return fallo(mensajeDeErrorDb({ message: "medio_pago_invalido" }));
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("registrar_corte", {
     p_cliente_id: clienteId,
     p_solicitud_id: solicitudId,
     p_monto: montoValido.data,
+    p_medio_pago: medioValido.data,
   });
   if (error || !data) return fallo(mensajeDeErrorDb(error));
 
@@ -280,6 +299,7 @@ export async function sumarCorte(
   return exito({
     corteId: data.id,
     monto: aNumero(data.monto),
+    medio: data.medio_pago,
     cliente: await clienteParaEscaneo(clienteId),
   });
 }
@@ -289,6 +309,83 @@ export async function deshacerCorte(corteId: string): Promise<Resultado> {
   if (!idSchema.safeParse(corteId).success) return fallo("Corte inválido.");
   const supabase = await createClient();
   const { error } = await supabase.rpc("deshacer_corte", { p_corte_id: corteId });
+  if (error) return fallo(mensajeDeErrorDb(error));
+  revalidarPanel();
+  return exito(undefined);
+}
+
+// ─── Mensualidad (con la sesión del barbero: valida la base) ────────────────
+
+/** Cobra la mensualidad (4 cortes) a un cliente que no tiene una activa. */
+export async function cobrarMensualidad(
+  clienteId: string,
+  solicitudId: string,
+  monto: number | null,
+  medio: MedioPago | null,
+): Promise<Resultado<{ id: string; monto: number; cliente: EstadoCliente | null }>> {
+  await requireBarbero();
+  if (!idSchema.safeParse(clienteId).success || !idSchema.safeParse(solicitudId).success) {
+    return fallo("Solicitud inválida.");
+  }
+  const montoValido = montoSchema.safeParse(monto);
+  if (!montoValido.success || !montoValido.data) {
+    return fallo(mensajeDeErrorDb({ message: "monto_invalido" }));
+  }
+  const medioValido = medioPagoSchema.safeParse(medio);
+  if (!medioValido.success) return fallo(mensajeDeErrorDb({ message: "medio_pago_invalido" }));
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cobrar_mensualidad", {
+    p_cliente: clienteId,
+    p_monto: montoValido.data,
+    p_medio_pago: medioValido.data,
+    p_solicitud_id: solicitudId,
+  });
+  if (error || !data) return fallo(mensajeDeErrorDb(error));
+
+  revalidarPanel();
+  return exito({
+    id: data.id,
+    monto: aNumero(data.monto) ?? montoValido.data,
+    cliente: await clienteParaEscaneo(clienteId),
+  });
+}
+
+/** Usa un corte de la mensualidad del cliente (no suma sellos ni cobra). */
+export async function usarCorteMensualidad(
+  clienteId: string,
+  solicitudId: string,
+): Promise<Resultado<{ corteId: string; cliente: EstadoCliente | null }>> {
+  await requireBarbero();
+  if (!idSchema.safeParse(clienteId).success || !idSchema.safeParse(solicitudId).success) {
+    return fallo("Solicitud inválida.");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("usar_corte_mensualidad", {
+    p_cliente: clienteId,
+    p_solicitud_id: solicitudId,
+  });
+  if (error || !data) return fallo(mensajeDeErrorDb(error));
+
+  revalidarPanel();
+  return exito({ corteId: data.id, cliente: await clienteParaEscaneo(clienteId) });
+}
+
+export async function deshacerCorteMensualidad(id: string): Promise<Resultado> {
+  await requireBarbero();
+  if (!idSchema.safeParse(id).success) return fallo("Corte inválido.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("deshacer_corte_mensualidad", { p_id: id });
+  if (error) return fallo(mensajeDeErrorDb(error));
+  revalidarPanel();
+  return exito(undefined);
+}
+
+export async function deshacerMensualidad(id: string): Promise<Resultado> {
+  await requireBarbero();
+  if (!idSchema.safeParse(id).success) return fallo("Mensualidad inválida.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("deshacer_mensualidad", { p_id: id });
   if (error) return fallo(mensajeDeErrorDb(error));
   revalidarPanel();
   return exito(undefined);

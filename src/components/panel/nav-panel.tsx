@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock,
   House,
+  ReceiptText,
   ScanLine,
   Scissors,
   Settings2,
@@ -22,6 +23,7 @@ type Item = { href: string; etiqueta: string; icono: LucideIcon; exacto?: boolea
 const INICIO: Item = { href: RUTAS.panel, etiqueta: "Inicio", icono: House, exacto: true };
 const CLIENTES: Item = { href: RUTAS.clientes, etiqueta: "Clientes", icono: Users };
 const ESCANEAR: Item = { href: RUTAS.escanear, etiqueta: "Escanear", icono: ScanLine };
+const REGISTRAR: Item = { href: RUTAS.registrar, etiqueta: "Registrar", icono: ReceiptText };
 const CAJA: Item = { href: RUTAS.caja, etiqueta: "Caja", icono: Wallet };
 const DESCUENTOS: Item = { href: RUTAS.descuentos, etiqueta: "Descuentos", icono: BadgePercent };
 const PREMIOS: Item = { href: RUTAS.reglas, etiqueta: "Premios", icono: Settings2 };
@@ -34,19 +36,32 @@ const AGENDA_Y_HORARIOS: Item = { ...AGENDA, exacto: false };
 /** El empleado no ve la caja ni la configuración. */
 const itemsLateral = (esDueno: boolean) =>
   esDueno
-    ? [INICIO, AGENDA, HORARIOS, SERVICIOS, CLIENTES, ESCANEAR, CAJA, DESCUENTOS, PREMIOS]
-    : [INICIO, AGENDA, HORARIOS, SERVICIOS, CLIENTES, ESCANEAR];
+    ? [
+        INICIO,
+        AGENDA,
+        HORARIOS,
+        SERVICIOS,
+        CLIENTES,
+        ESCANEAR,
+        REGISTRAR,
+        CAJA,
+        DESCUENTOS,
+        PREMIOS,
+      ]
+    : [INICIO, AGENDA, HORARIOS, SERVICIOS, CLIENTES, ESCANEAR, REGISTRAR];
 
 /**
  * Barra inferior: 5 lugares, con "Escanear" al centro. Para el dueño, la caja y
  * la agenda ocupan los lugares de "Descuentos" y "Premios" (que siguen en el
- * menú lateral y en Inicio). El empleado tiene a mano sus horarios. "Servicios"
- * no entra: se llega desde la Agenda y desde Horarios.
+ * menú lateral y en Inicio). El empleado tiene a mano "Registrar" (servicios
+ * sin cliente, todos los días); sus horarios se cargan desde la Agenda.
+ * "Servicios" no entra: se llega desde la Agenda y desde Horarios. "Registrar"
+ * del dueño está en Inicio.
  */
 const itemsInferior = (esDueno: boolean) =>
   esDueno
     ? [INICIO, AGENDA_Y_HORARIOS, ESCANEAR, CLIENTES, CAJA]
-    : [INICIO, AGENDA, ESCANEAR, CLIENTES, HORARIOS];
+    : [INICIO, { ...AGENDA, exacto: false }, ESCANEAR, CLIENTES, REGISTRAR];
 
 function useActivo() {
   const path = usePathname();

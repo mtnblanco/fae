@@ -7,7 +7,8 @@ import { exito, fallo, type Resultado } from "@/lib/resultado";
 import { RUTAS } from "@/lib/rutas";
 import { createClient } from "@/lib/supabase/server";
 import { mensajeDeErrorTurno } from "@/lib/turnos/errores";
-import { erroresDeCampo, idSchema, servicioSchema } from "@/lib/validaciones";
+import { mensajeDeErrorDb } from "@/lib/errores";
+import { erroresDeCampo, idSchema, precioClienteSchema, servicioSchema } from "@/lib/validaciones";
 
 // Los servicios se escriben con funciones de la base que vuelven a verificar
 // quién llama: el empleado, los suyos; el dueño (y el admin), los de cualquiera.
@@ -85,4 +86,33 @@ export async function borrarServicio(id: string): Promise<Resultado> {
   if (error) return fallo(mensajeDeErrorTurno(error));
   revalidar();
   return exito(undefined);
+}
+
+/** Precio de la mensualidad (4 cortes) de un barbero. Vacío = sin precio. */
+export async function guardarPrecioMensualidad(
+  _previo: EstadoFormulario,
+  formData: FormData,
+): Promise<EstadoFormulario> {
+  await requireBarbero();
+  const valores = { precio: texto(formData, "precio") };
+  const parse = precioClienteSchema.safeParse({ ...valores, id: texto(formData, "id") });
+  if (!parse.success) return { estado: "error", errores: erroresDeCampo(parse.error), valores };
+  if (parse.data.precio === 0) {
+    return {
+      estado: "error",
+      errores: { precio: ["El precio tiene que ser mayor a $ 0."] },
+      valores,
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("guardar_precio_mensualidad", {
+    p_barbero: parse.data.id,
+    p_precio: parse.data.precio,
+  });
+  if (error) return { estado: "error", mensaje: mensajeDeErrorDb(error), valores };
+
+  revalidatePath(RUTAS.servicios);
+  revalidatePath(RUTAS.panel, "layout");
+  return { estado: "ok", mensaje: "Precio de la mensualidad guardado" };
 }

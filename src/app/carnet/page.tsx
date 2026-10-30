@@ -7,6 +7,7 @@ import { Bienvenida } from "@/components/carnet/bienvenida";
 import { ListaEtapas } from "@/components/carnet/lista-etapas";
 import { SugerenciaInstalar } from "@/components/carnet/sugerencia-instalar";
 import { TarjetaCarnet } from "@/components/carnet/tarjeta-carnet";
+import { TarjetaMensualidad } from "@/components/carnet/tarjeta-mensualidad";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { FotoComercio } from "@/components/comunes/foto-comercio";
 import { TurnoCarnet } from "@/components/turnos/turno-carnet";
@@ -28,7 +29,7 @@ export default async function PaginaCarnet() {
   const datos = await datosCarnet(userId);
   if (!datos) throw new Error("No encontramos tu carnet.");
 
-  const { cliente, cortes, canjes, descuentos } = datos;
+  const { cliente, cortes, canjes, descuentos, mensualidad } = datos;
   const p = calcularProgreso(cliente);
   // El QR lleva a la ficha del cliente en el panel: el escáner extrae el id,
   // y si el barbero usa la cámara común del celular, también abre la ficha.
@@ -56,6 +57,17 @@ export default async function PaginaCarnet() {
         numeroSocio={numeroDeSocio(cliente.id)}
         qrSvg={qrSvg}
       />
+
+      {mensualidad ? (
+        <section aria-label="Tu mensualidad">
+          <TarjetaMensualidad
+            incluidos={mensualidad.incluidos}
+            usos={mensualidad.usos}
+            desde={mensualidad.desde}
+            para="cliente"
+          />
+        </section>
+      ) : null}
 
       <TurnoCarnet cliente={perfil.nombre} />
 

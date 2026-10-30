@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FOTO_MAX_BYTES, TIPOS_FOTO } from "./descuentos";
 import { MONTO_MAX, parsearMonto } from "./dinero";
+import { MEDIOS_PAGO, MENSAJE_FALTA_MEDIO } from "./medios-pago";
 import {
   esPasswordComun,
   esPasswordTelefono,
@@ -79,6 +80,8 @@ export const montoSchema = z
   .max(MONTO_MAX, { error: MSJ_MONTO })
   .nullable();
 
+export const medioPagoSchema = z.enum(MEDIOS_PAGO, { error: MENSAJE_FALTA_MEDIO });
+
 /** Monto escrito en un campo de texto ("8.000", "8500,50"). Vacío = sin monto. */
 export const montoTextoSchema = z.string().transform((texto, ctx) => {
   const leido = parsearMonto(texto);
@@ -88,6 +91,27 @@ export const montoTextoSchema = z.string().transform((texto, ctx) => {
   }
   return leido.monto;
 });
+
+/** Servicio cobrado sin cliente registrado: de la lista del barbero o escrito a mano. */
+export const servicioHechoSchema = z
+  .object({
+    barberoId: idSchema,
+    servicioId: idSchema.nullable(),
+    nombre: z.string().trim().max(60, { error: "El nombre puede tener hasta 60 letras." }),
+    monto: z
+      .number({ error: "Escribí cuánto te pagó." })
+      .gt(0, { error: "Escribí cuánto te pagó." })
+      .max(MONTO_MAX, { error: MSJ_MONTO })
+      .nullable()
+      .refine((m) => m !== null, { error: "Escribí cuánto te pagó." }),
+    medio: medioPagoSchema.nullable().refine((m) => m !== null, { error: MENSAJE_FALTA_MEDIO }),
+    nota: z.string().trim().max(80, { error: "La aclaración puede tener hasta 80 letras." }),
+  })
+  .refine((d) => d.servicioId !== null || d.nombre.length >= 2, {
+    error: "Elegí un servicio o escribí cuál fue.",
+    path: ["nombre"],
+  })
+  .transform((d) => ({ ...d, monto: d.monto!, medio: d.medio! }));
 
 export const precioClienteSchema = z.object({
   id: idSchema,

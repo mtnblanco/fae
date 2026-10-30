@@ -2,6 +2,7 @@ import {
   BadgePercent,
   ChevronRight,
   Gift,
+  ReceiptText,
   ScanLine,
   Scissors,
   Search,
@@ -75,11 +76,17 @@ export default async function PaginaPanel() {
         <h1 id="titulo-saludo" className="text-[2rem] leading-[1.1] sm:text-[2.5rem]">
           {saludo()}, {perfil.nombre.split(" ")[0]}
         </h1>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <Button asChild size="xl" className="w-full">
             <Link href={RUTAS.escanear}>
               <ScanLine aria-hidden />
               Escanear carnet
+            </Link>
+          </Button>
+          <Button asChild size="xl" variant="outline" className="w-full">
+            <Link href={RUTAS.registrar}>
+              <ReceiptText aria-hidden />
+              Registrar servicio
             </Link>
           </Button>
           <div className="grid grid-cols-2 gap-3 sm:contents">

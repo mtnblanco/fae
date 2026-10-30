@@ -8,8 +8,7 @@ import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
-import { useSumarCorte } from "@/hooks/use-sumar-corte";
-import { formatearPesos } from "@/lib/dinero";
+import { textoCobrado, useSumarCorte } from "@/hooks/use-sumar-corte";
 import {
   calcularProgreso,
   enFrase,
@@ -18,8 +17,11 @@ import {
   type PremioEtapa,
   textoCortes,
 } from "@/lib/progreso";
+import { TarjetaMensualidad } from "@/components/carnet/tarjeta-mensualidad";
+import type { EstadoMensualidad } from "@/lib/datos/mensualidad";
 import { BotonCanjear, ListaPremios } from "./boton-canjear";
 import { CampoMonto } from "./campo-monto";
+import { BotonUsarMensualidad, DialogoCobrarMensualidad } from "./mensualidad";
 
 type Props = {
   cliente: {
@@ -35,14 +37,16 @@ type Props = {
   };
   /** Servicio del turno de ahora (si reservó con servicio): se cobra su precio. */
   servicioTurno?: { nombre: string; precio: number } | null;
+  mensualidad: EstadoMensualidad;
 };
 
 /**
  * Avance de la tarjeta del cliente y acciones del barbero: sumar corte (con el
  * monto precargado con su precio habitual) y canjear premio (eligiendo cuál).
  */
-export function AccionesCliente({ cliente, servicioTurno }: Props) {
+export function AccionesCliente({ cliente, servicioTurno, mensualidad }: Props) {
   const p = calcularProgreso(cliente);
+  const activa = mensualidad.activa;
   const primerNombre = cliente.nombre.split(" ")[0];
   const sumar = useSumarCorte(cliente.id, servicioTurno?.precio ?? cliente.precio_habitual);
   const canjear = useAccionUnica();
@@ -61,8 +65,7 @@ export function AccionesCliente({ cliente, servicioTurno }: Props) {
       const total = datos.cliente?.total_cortes ?? cliente.total_cortes + 1;
       const ganado = etapaAlcanzada(p.etapas, total);
       if (ganado) setFestejo((n) => n + 1);
-      const cobrado =
-        datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`;
+      const cobrado = textoCobrado(datos.monto, datos.medio);
       toast.success(
         ganado
           ? `¡${primerNombre} ganó ${enFrase(ganado.descripcion)}!`
@@ -126,38 +129,67 @@ export function AccionesCliente({ cliente, servicioTurno }: Props) {
         <ListaPremios disponibles={p.disponibles} prefijo="Tiene para canjear:" />
       </div>
 
-      <CampoMonto
-        valor={sumar.texto}
-        onCambio={sumar.cambiar}
-        invalido={sumar.invalido}
-        sinPrecio={!servicioTurno && cliente.precio_habitual === null}
-        disabled={sumar.pendiente}
-        nota={servicioTurno ? `Precio de su turno: ${servicioTurno.nombre}.` : undefined}
-      />
+      {activa ? (
+        <>
+          <TarjetaMensualidad
+            incluidos={activa.incluidos}
+            usos={activa.usos}
+            desde={activa.desde}
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <BotonUsarMensualidad
+              cliente={cliente}
+              quedan={activa.incluidos - activa.usos.length}
+            />
+            <BotonCanjear
+              primerNombre={primerNombre ?? cliente.nombre}
+              disponibles={p.disponibles}
+              pendiente={canjear.pendiente}
+              onCanjear={alCanjear}
+              siempreVisible
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <CampoMonto
+            valor={sumar.texto}
+            onCambio={sumar.cambiar}
+            invalido={sumar.invalido}
+            medio={sumar.medio}
+            onMedio={sumar.elegirMedio}
+            faltaMedio={sumar.faltaMedio}
+            sinPrecio={!servicioTurno && cliente.precio_habitual === null}
+            disabled={sumar.pendiente}
+            nota={servicioTurno ? `Precio de su turno: ${servicioTurno.nombre}.` : undefined}
+          />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Button
-          size="xl"
-          variant="neon"
-          onClick={alSumar}
-          disabled={sumar.pendiente}
-          aria-busy={sumar.pendiente || undefined}
-        >
-          {sumar.pendiente ? (
-            <Loader2 className="animate-spin" aria-hidden />
-          ) : (
-            <Plus aria-hidden />
-          )}
-          {sumar.pendiente ? "Sumando…" : "Sumar corte"}
-        </Button>
-        <BotonCanjear
-          primerNombre={primerNombre ?? cliente.nombre}
-          disponibles={p.disponibles}
-          pendiente={canjear.pendiente}
-          onCanjear={alCanjear}
-          siempreVisible
-        />
-      </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Button
+              size="xl"
+              variant="neon"
+              onClick={alSumar}
+              disabled={sumar.pendiente}
+              aria-busy={sumar.pendiente || undefined}
+            >
+              {sumar.pendiente ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Plus aria-hidden />
+              )}
+              {sumar.pendiente ? "Sumando…" : "Sumar corte"}
+            </Button>
+            <BotonCanjear
+              primerNombre={primerNombre ?? cliente.nombre}
+              disponibles={p.disponibles}
+              pendiente={canjear.pendiente}
+              onCanjear={alCanjear}
+              siempreVisible
+            />
+          </div>
+          <DialogoCobrarMensualidad cliente={cliente} precio={mensualidad.precioBarbero} />
+        </>
+      )}
     </section>
   );
 }

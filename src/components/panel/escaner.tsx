@@ -20,14 +20,15 @@ import { Celebracion } from "@/components/carnet/celebracion";
 import { GrillaSellos } from "@/components/carnet/sellos";
 import { Button } from "@/components/ui/button";
 import { useAccionUnica } from "@/hooks/use-accion-unica";
-import { useSumarCorte } from "@/hooks/use-sumar-corte";
-import { formatearPesos } from "@/lib/dinero";
+import { textoCobrado, useSumarCorte } from "@/hooks/use-sumar-corte";
 import { tiempoRelativo } from "@/lib/fechas";
 import { calcularProgreso, enFrase, etapaAlcanzada, textoCortes } from "@/lib/progreso";
 import { idDesdeQr } from "@/lib/qr";
 import { RUTAS, rutaCliente } from "@/lib/rutas";
+import { TarjetaMensualidad } from "@/components/carnet/tarjeta-mensualidad";
 import { BotonCanjear, ListaPremios } from "./boton-canjear";
 import { CampoMonto } from "./campo-monto";
+import { BotonUsarMensualidad, DialogoCobrarMensualidad } from "./mensualidad";
 
 // El lector WebAssembly (para iPhone) se sirve desde la app, no desde un CDN.
 setZXingModuleOverrides({
@@ -47,7 +48,13 @@ const ERRORES_CAMARA: Partial<Record<IScannerError["kind"], string>> = {
 type Estado =
   | { fase: "escaneando" }
   | { fase: "buscando" }
-  | { fase: "cliente"; cliente: EstadoCliente; corteSumado: string | null; nuevos: number }
+  | {
+      fase: "cliente";
+      cliente: EstadoCliente;
+      /** Id del corte recién sumado ("mensual" si fue un corte de la mensualidad). */
+      corteSumado: string | null;
+      nuevos: number;
+    }
   | { fase: "error-camara"; mensaje: string };
 
 export function Escaner() {
@@ -119,8 +126,7 @@ export function Escaner() {
         const ganado = etapaAlcanzada(p.etapas, nuevo.total_cortes);
         if (ganado) setFestejo((n) => n + 1);
         setEstado({ fase: "cliente", cliente: nuevo, corteSumado: datos.corteId, nuevos: 1 });
-        const cobrado =
-          datos.monto === null ? "Sin monto" : `Cobrado: ${formatearPesos(datos.monto)}`;
+        const cobrado = textoCobrado(datos.monto, datos.medio);
         toast.success(
           ganado
             ? `¡${primerNombre} ganó ${enFrase(ganado.descripcion)}!`
@@ -150,6 +156,23 @@ export function Escaner() {
           },
         );
       });
+
+    // Cambió la mensualidad: con el estado nuevo, o recargando (al deshacer).
+    const alCambiarMensualidad = (mensual: boolean) => async (nuevo: EstadoCliente | null) => {
+      if (nuevo) {
+        setEstado({
+          fase: "cliente",
+          cliente: nuevo,
+          corteSumado: mensual ? "mensual" : null,
+          nuevos: 0,
+        });
+        return;
+      }
+      const recargado = await buscarClienteEscaneado(c.id);
+      if (recargado.ok)
+        setEstado({ fase: "cliente", cliente: recargado.datos, corteSumado: null, nuevos: 0 });
+    };
+    const activa = c.mensualidad.activa;
 
     const alCanjear = (etapa: number) =>
       canjear.ejecutar(async (solicitudId) => {
@@ -202,14 +225,36 @@ export function Escaner() {
             <span className="sello-lleno flex size-8 shrink-0 items-center justify-center">
               <Check className="size-4" strokeWidth={2.75} aria-hidden />
             </span>
-            Corte sumado a {primerNombre}
+            {estado.corteSumado === "mensual"
+              ? `Corte de mensualidad a ${primerNombre}`
+              : `Corte sumado a ${primerNombre}`}
           </p>
-        ) : (
+        ) : null}
+
+        {activa ? (
+          <>
+            <TarjetaMensualidad
+              incluidos={activa.incluidos}
+              usos={activa.usos}
+              desde={activa.desde}
+            />
+            {estado.corteSumado ? null : (
+              <BotonUsarMensualidad
+                cliente={c}
+                quedan={activa.incluidos - activa.usos.length}
+                alCambiar={alCambiarMensualidad(true)}
+              />
+            )}
+          </>
+        ) : estado.corteSumado ? null : (
           <>
             <CampoMonto
               valor={sumar.texto}
               onCambio={sumar.cambiar}
               invalido={sumar.invalido}
+              medio={sumar.medio}
+              onMedio={sumar.elegirMedio}
+              faltaMedio={sumar.faltaMedio}
               sinPrecio={c.precio_habitual === null}
               disabled={sumar.pendiente}
             />
@@ -221,6 +266,11 @@ export function Escaner() {
               )}
               {sumar.pendiente ? "Sumando…" : "Sumar corte"}
             </Button>
+            <DialogoCobrarMensualidad
+              cliente={c}
+              precio={c.mensualidad.precioBarbero}
+              alCambiar={alCambiarMensualidad(false)}
+            />
           </>
         )}
 

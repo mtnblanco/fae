@@ -115,6 +115,18 @@ export async function servicioDelTurnoCercano(
  * Barberos que atienden (para el selector del dueño y del admin): el dueño y
  * el empleado. El admin no atiende: no tiene agenda ni horarios.
  */
+/** Precio de la mensualidad (4 cortes) de un barbero, o null. */
+export async function precioMensualidadDe(barberoId: string): Promise<number | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("precio_mensualidad")
+    .eq("id", barberoId)
+    .maybeSingle();
+  fallar(error, "No se pudo cargar el precio de la mensualidad");
+  return aNumero(data?.precio_mensualidad);
+}
+
 export async function listarBarberos() {
   const supabase = await createClient();
   const { data, error } = await supabase

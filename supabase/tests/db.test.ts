@@ -131,11 +131,17 @@ describe("estructura y hardening", () => {
     expect(r.opciones).toContain("security_invoker=true");
   });
 
-  it("cortes, canjes y turnos están publicados en Realtime", async () => {
+  it("cortes, canjes, turnos y mensualidades están publicados en Realtime", async () => {
     const tablas = await filas<{ tablename: string }>(
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1`,
     );
-    expect(tablas.map((t) => t.tablename)).toEqual(["canjes", "cortes", "turnos"]);
+    expect(tablas.map((t) => t.tablename)).toEqual([
+      "canjes",
+      "cortes",
+      "cortes_mensualidad",
+      "mensualidades",
+      "turnos",
+    ]);
   });
 
   it("solo puede haber una regla activa", async () => {

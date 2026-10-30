@@ -18,6 +18,7 @@ type Relacion<Nombre extends string, Columna extends string, Tabla extends strin
 };
 
 export type Rol = "barbero" | "cliente";
+export type MedioPago = "efectivo" | "transferencia";
 export type TipoFoto = "image/webp" | "image/jpeg";
 
 export type Database = {
@@ -38,6 +39,8 @@ export type Database = {
           es_dueno: boolean;
           precio_habitual: number | null;
           es_admin: boolean;
+          /** Solo barberos: precio de su mensualidad (4 cortes). */
+          precio_mensualidad: number | null;
         };
         Insert: {
           id: string;
@@ -71,6 +74,8 @@ export type Database = {
           registrado_por: string | null;
           solicitud_id: string | null;
           monto: number | null;
+          /** Null si no se cobró o en cortes anteriores a la migración 20261030000100. */
+          medio_pago: MedioPago | null;
         };
         Insert: {
           id?: string;
@@ -79,6 +84,7 @@ export type Database = {
           registrado_por?: string | null;
           solicitud_id?: string | null;
           monto?: number | null;
+          medio_pago?: MedioPago | null;
         };
         Update: {
           id?: string;
@@ -87,6 +93,7 @@ export type Database = {
           registrado_por?: string | null;
           solicitud_id?: string | null;
           monto?: number | null;
+          medio_pago?: MedioPago | null;
         };
         Relationships: [
           Relacion<"cortes_cliente_id_fkey", "cliente_id", "perfiles">,
@@ -275,6 +282,54 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      // ─── Servicios sin cliente registrado (migración 20261030000100) ───
+      servicios_hechos: {
+        Row: {
+          id: string;
+          barbero_id: string | null;
+          servicio_id: string | null;
+          servicio_nombre: string;
+          monto: number;
+          medio_pago: MedioPago;
+          nota: string | null;
+          fecha: string;
+          registrado_por: string | null;
+          solicitud_id: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      // ─── Mensualidades (migración 20261030000200) ───
+      mensualidades: {
+        Row: {
+          id: string;
+          cliente_id: string;
+          /** Quién la cobró. */
+          barbero_id: string | null;
+          monto: number;
+          medio_pago: MedioPago;
+          cortes_incluidos: number;
+          fecha: string;
+          solicitud_id: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      cortes_mensualidad: {
+        Row: {
+          id: string;
+          mensualidad_id: string;
+          cliente_id: string;
+          fecha: string;
+          registrado_por: string | null;
+          solicitud_id: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       suscripciones_push: {
         Row: {
           id: string;
@@ -331,7 +386,12 @@ export type Database = {
       es_dueno: { Args: never; Returns: boolean };
       hoy_ar: { Args: never; Returns: string };
       registrar_corte: {
-        Args: { p_cliente_id: string; p_solicitud_id?: string; p_monto?: number | null };
+        Args: {
+          p_cliente_id: string;
+          p_solicitud_id?: string;
+          p_monto?: number | null;
+          p_medio_pago?: MedioPago | null;
+        };
         Returns: Database["public"]["Tables"]["cortes"]["Row"];
       };
       deshacer_corte: { Args: { p_corte_id: string }; Returns: undefined };
@@ -366,6 +426,31 @@ export type Database = {
           cortes_sin_monto: number;
           total: number;
           es_admin: boolean;
+          /** Servicios sin cliente (no están en `cortes`; sí en `total`). */
+          servicios: number;
+          efectivo: number;
+          transferencia: number;
+          /** Mensualidades cobradas (su plata está en `total`). */
+          mensualidades: number;
+          /** Cortes hechos con mensualidad (no suman plata). */
+          cortes_mensuales: number;
+        }[];
+      };
+      movimientos_caja: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: {
+          tipo: "corte" | "servicio" | "mensualidad" | "mensual";
+          id: string;
+          fecha: string;
+          barbero_id: string | null;
+          barbero_nombre: string | null;
+          cliente_id: string | null;
+          /** En los servicios sin cliente, la aclaración que cargó el barbero. */
+          cliente_nombre: string | null;
+          servicio_nombre: string | null;
+          monto: number | null;
+          medio_pago: MedioPago | null;
+          registrado_por: string | null;
         }[];
       };
       metricas_panel: {
@@ -489,6 +574,52 @@ export type Database = {
         Returns: Database["public"]["Tables"]["servicios"]["Row"];
       };
       borrar_servicio: { Args: { p_servicio: string }; Returns: undefined };
+      // ─── Cobros (migración 20261030000100) ───
+      registrar_servicio_hecho: {
+        Args: {
+          p_barbero: string;
+          p_monto: number;
+          p_medio_pago: MedioPago;
+          p_servicio?: string | null;
+          p_nombre?: string | null;
+          p_nota?: string | null;
+          p_solicitud_id?: string;
+        };
+        Returns: Database["public"]["Tables"]["servicios_hechos"]["Row"];
+      };
+      deshacer_servicio_hecho: { Args: { p_id: string }; Returns: undefined };
+      // ─── Mensualidades (migración 20261030000200) ───
+      guardar_precio_mensualidad: {
+        Args: { p_barbero: string; p_precio: number | null };
+        Returns: number | null;
+      };
+      estado_mensualidad: {
+        Args: { p_cliente: string };
+        Returns: {
+          activa: boolean;
+          mensualidad_id: string | null;
+          cortes_incluidos: number | null;
+          cortes_usados: number;
+          usos: string[];
+          desde: string | null;
+          precio_barbero: number | null;
+        }[];
+      };
+      cobrar_mensualidad: {
+        Args: {
+          p_cliente: string;
+          p_monto: number;
+          p_medio_pago: MedioPago;
+          p_solicitud_id?: string;
+        };
+        Returns: Database["public"]["Tables"]["mensualidades"]["Row"];
+      };
+      usar_corte_mensualidad: {
+        Args: { p_cliente: string; p_solicitud_id?: string };
+        Returns: Database["public"]["Tables"]["cortes_mensualidad"]["Row"];
+      };
+      deshacer_corte_mensualidad: { Args: { p_id: string }; Returns: undefined };
+      deshacer_mensualidad: { Args: { p_id: string }; Returns: undefined };
       // ─── Seguridad (migración 20261025000100; solo service_role) ───
       revocar_sesiones: { Args: { p_usuario: string }; Returns: number };
       consumir_intento: {
@@ -526,3 +657,7 @@ export type FilaAgenda = Public["Functions"]["agenda_dia"]["Returns"][number];
 export type BarberoTurnos = Public["Functions"]["barberos_turnos"]["Returns"][number];
 export type MiTurno = Public["Functions"]["mi_proximo_turno"]["Returns"][number];
 export type Servicio = Tabla<"servicios">;
+
+// Cobros
+export type ServicioHecho = Tabla<"servicios_hechos">;
+export type MovimientoCaja = Public["Functions"]["movimientos_caja"]["Returns"][number];

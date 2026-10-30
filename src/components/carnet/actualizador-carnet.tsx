@@ -6,7 +6,8 @@ import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Refresca el carnet cuando el barbero suma un corte o canjea un premio:
+ * Refresca el carnet cuando el barbero suma un corte, canjea un premio o
+ * registra la mensualidad (pago o corte usado):
  *  - en vivo, por Supabase Realtime (respeta el RLS: solo llegan SUS registros);
  *  - y como respaldo, cada vez que el cliente vuelve a la pestaña o a la app.
  */
@@ -54,6 +55,27 @@ export function ActualizadorCarnet({
             event: "INSERT",
             schema: "public",
             table: "canjes",
+            filter: `cliente_id=eq.${clienteId}`,
+          },
+          refrescar,
+        )
+        // La mensualidad: al pagarla y con cada corte que usa.
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "mensualidades",
+            filter: `cliente_id=eq.${clienteId}`,
+          },
+          refrescar,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "cortes_mensualidad",
             filter: `cliente_id=eq.${clienteId}`,
           },
           refrescar,

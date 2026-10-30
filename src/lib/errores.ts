@@ -30,6 +30,21 @@ const MENSAJES_DB: Record<string, string> = {
   servicio_descripcion_invalida: "La descripción puede tener hasta 140 letras.",
   servicio_precio_invalido: "Revisá el precio: tiene que ser mayor a $ 0, por ejemplo 8.000.",
   servicio_repetido: "Ya hay un servicio con ese nombre.",
+  medio_pago_invalido: "Marcá si pagó en efectivo o por transferencia.",
+  nota_invalida: "La aclaración puede tener hasta 80 letras.",
+  servicio_hecho_inexistente: "Ese servicio ya no existe (puede que ya se haya deshecho).",
+  servicio_hecho_ajeno: "Solo podés deshacer los servicios que cargaste vos.",
+  servicio_fuera_de_plazo:
+    "Este servicio ya no se puede deshacer: el barbero tiene 10 minutos y el dueño, hasta el final del día.",
+  mensualidad_activa: "Este cliente todavía tiene cortes de su mensualidad.",
+  sin_mensualidad: "Este cliente no tiene una mensualidad con cortes disponibles.",
+  mensualidad_ajena: "Solo podés deshacer lo que cargaste vos.",
+  mensualidad_fuera_de_plazo:
+    "Ya no se puede deshacer: el barbero tiene 10 minutos y el dueño, hasta el final del día.",
+  mensualidad_renovada: "Este cliente ya pagó otra mensualidad: este corte no se puede deshacer.",
+  mensualidad_usada: "Ya se usaron cortes de esta mensualidad: no se puede deshacer el cobro.",
+  mensualidad_inexistente: "Esa mensualidad ya no existe (puede que ya se haya deshecho).",
+  barbero_inexistente: "Ese barbero no existe.",
   demasiados_servicios: "Llegaste al máximo de 30 servicios. Borrá alguno que no uses.",
 };
 

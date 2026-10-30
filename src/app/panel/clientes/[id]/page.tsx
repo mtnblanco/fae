@@ -17,6 +17,7 @@ import {
   nombresBarberos,
   obtenerCliente,
 } from "@/lib/datos/panel";
+import { estadoMensualidad } from "@/lib/datos/mensualidad";
 import { servicioDelTurnoCercano } from "@/lib/datos/turnos";
 import { formatearPesos } from "@/lib/dinero";
 import { anioDe, tiempoRelativo } from "@/lib/fechas";
@@ -54,7 +55,10 @@ export default async function PaginaCliente({
   ]);
   if (!datos) notFound();
   // Si viene por un turno con servicio, se cobra el precio de ese servicio.
-  const servicioTurno = await servicioDelTurnoCercano(id, perfil.id).catch(() => null);
+  const [servicioTurno, mensualidad] = await Promise.all([
+    servicioDelTurnoCercano(id, perfil.id).catch(() => null),
+    estadoMensualidad(id),
+  ]);
 
   const { cliente, cortes, canjes, cortesVisibles, canjesTotal } = datos;
   const esDueno = perfil.es_dueno;
@@ -122,7 +126,7 @@ export default async function PaginaCliente({
         </div>
       </div>
 
-      <AccionesCliente cliente={cliente} servicioTurno={servicioTurno} />
+      <AccionesCliente cliente={cliente} servicioTurno={servicioTurno} mensualidad={mensualidad} />
 
       <section aria-labelledby="titulo-historial">
         <div className="mb-4 flex items-baseline justify-between gap-4">

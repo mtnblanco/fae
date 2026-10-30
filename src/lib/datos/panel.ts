@@ -7,10 +7,14 @@ import type {
   Descuento,
   FilaFacturacion,
   Metricas,
+  MovimientoCaja,
   Regla,
   ResumenCliente,
+  ServicioHecho,
 } from "@/lib/database.types";
 import { aNumero } from "@/lib/dinero";
+import { hoyISO } from "@/lib/fechas";
+import { estadoMensualidad } from "./mensualidad";
 import { limitesRango, type Rango } from "@/lib/periodos";
 import { createClient } from "@/lib/supabase/server";
 
@@ -169,52 +173,69 @@ export async function obtenerFacturacion({ desde, hasta }: Rango): Promise<FilaF
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("facturacion", { p_desde: desde, p_hasta: hasta });
   fallar(error, "No se pudo cargar la caja");
-  return (data ?? []).map((f) => ({ ...f, total: aNumero(f.total) ?? 0 }));
+  return (data ?? []).map((f) => ({
+    ...f,
+    total: aNumero(f.total) ?? 0,
+    efectivo: aNumero(f.efectivo) ?? 0,
+    transferencia: aNumero(f.transferencia) ?? 0,
+  }));
 }
 
-const CORTES_POR_PAGINA = 25;
+const MOVIMIENTOS_POR_PAGINA = 25;
 
-export type CorteCaja = CorteHistorial & { clienteId: string; clienteNombre: string };
+const aMovimiento = (m: MovimientoCaja): MovimientoCaja => ({ ...m, monto: aNumero(m.monto) });
 
-/** Cortes de un período, del más nuevo al más viejo, con el nombre del cliente. */
-export async function listarCortesPeriodo(rango: Rango, paginaPedida = 1) {
+/** Cortes y servicios sin cliente de un período, del más nuevo al más viejo (paginado). */
+export async function listarMovimientosPeriodo({ desde, hasta }: Rango, paginaPedida = 1) {
   const pagina = Math.max(1, paginaPedida);
-  const desde = (pagina - 1) * CORTES_POR_PAGINA;
-  const { inicio, fin } = limitesRango(rango);
+  const inicio = (pagina - 1) * MOVIMIENTOS_POR_PAGINA;
   const supabase = await createClient();
   const { data, count, error } = await supabase
-    .from("cortes")
-    .select("id, fecha, cliente_id, registrado_por, monto", { count: "exact" })
-    .gte("fecha", inicio)
-    .lt("fecha", fin)
-    .order("fecha", { ascending: false })
-    .range(desde, desde + CORTES_POR_PAGINA - 1);
-  if (error?.code !== "PGRST103") fallar(error, "No se pudieron cargar los cortes");
-
-  const filas = data ?? [];
-  const ids = [...new Set(filas.map((c) => c.cliente_id))];
-  const nombres = new Map<string, string>();
-  if (ids.length) {
-    const r = await supabase.from("perfiles").select("id, nombre").in("id", ids);
-    fallar(r.error, "No se pudieron cargar los cortes");
-    for (const p of r.data ?? []) nombres.set(p.id, p.nombre);
-  }
+    .rpc("movimientos_caja", { p_desde: desde, p_hasta: hasta }, { count: "exact" })
+    .range(inicio, inicio + MOVIMIENTOS_POR_PAGINA - 1);
+  if (error?.code !== "PGRST103") fallar(error, "No se pudieron cargar los cobros");
 
   const total = count ?? 0;
   return {
-    cortes: filas.map((c): CorteCaja => ({
-      id: c.id,
-      fecha: c.fecha,
-      registrado_por: c.registrado_por,
-      monto: aNumero(c.monto),
-      clienteId: c.cliente_id,
-      clienteNombre: nombres.get(c.cliente_id) ?? "Cliente eliminado",
-    })),
+    movimientos: (data ?? []).map(aMovimiento),
     total,
     pagina,
-    paginas: Math.max(1, Math.ceil(total / CORTES_POR_PAGINA)),
-    porPagina: CORTES_POR_PAGINA,
+    paginas: Math.max(1, Math.ceil(total / MOVIMIENTOS_POR_PAGINA)),
+    porPagina: MOVIMIENTOS_POR_PAGINA,
   };
+}
+
+/** Máximo de filas que devuelve la API por pedido (max-rows de PostgREST en Supabase). */
+const LOTE_EXPORTAR = 1000;
+
+/** Todos los movimientos de un período, del más viejo al más nuevo (para el informe). */
+export async function todosLosMovimientos({ desde, hasta }: Rango): Promise<MovimientoCaja[]> {
+  const supabase = await createClient();
+  const todos: MovimientoCaja[] = [];
+  for (let inicio = 0; ; inicio += LOTE_EXPORTAR) {
+    const { data, error } = await supabase
+      .rpc("movimientos_caja", { p_desde: desde, p_hasta: hasta })
+      .range(inicio, inicio + LOTE_EXPORTAR - 1);
+    fallar(error, "No se pudieron cargar los cobros");
+    todos.push(...(data ?? []).map(aMovimiento));
+    if ((data ?? []).length < LOTE_EXPORTAR) break;
+  }
+  return todos.reverse();
+}
+
+/** Servicios sin cliente cargados hoy. El RLS decide: el dueño ve todos; el empleado, los suyos. */
+export async function serviciosHechosDeHoy(): Promise<ServicioHecho[]> {
+  const { inicio, fin } = limitesRango({ desde: hoyISO(), hasta: hoyISO() });
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("servicios_hechos")
+    .select("*")
+    .gte("fecha", inicio)
+    .lt("fecha", fin)
+    .order("fecha", { ascending: false })
+    .limit(100);
+  fallar(error, "No se pudieron cargar los servicios de hoy");
+  return (data ?? []).map((h) => ({ ...h, monto: aNumero(h.monto) ?? 0 }));
 }
 
 export type Actividad = {
@@ -312,16 +333,22 @@ export async function obtenerReglas(): Promise<{ activa: Regla | null; historial
   };
 }
 
-/** Datos mínimos de un cliente para la pantalla del escáner (incluye su precio, para cobrarle). */
+/**
+ * Datos mínimos de un cliente para la pantalla del escáner (incluye su precio,
+ * para cobrarle, y su mensualidad).
+ */
 export async function clienteParaEscaneo(id: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("resumen_clientes")
-    .select(
-      "id, nombre, telefono, total_cortes, sellos_actuales, premios_disponibles, cortes_necesarios, descripcion_premio, etapas, premios, ultimo_corte, precio_habitual",
-    )
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data, error }, mensualidad] = await Promise.all([
+    supabase
+      .from("resumen_clientes")
+      .select(
+        "id, nombre, telefono, total_cortes, sellos_actuales, premios_disponibles, cortes_necesarios, descripcion_premio, etapas, premios, ultimo_corte, precio_habitual",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    estadoMensualidad(id),
+  ]);
   fallar(error, "No se pudo cargar el cliente");
-  return data ? { ...data, precio_habitual: aNumero(data.precio_habitual) } : null;
+  return data ? { ...data, precio_habitual: aNumero(data.precio_habitual), mensualidad } : null;
 }
