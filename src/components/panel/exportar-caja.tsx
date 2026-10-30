@@ -6,27 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { compartir, descargar, puedeCompartir } from "@/lib/compartir";
 import { ERROR_GENERICO } from "@/lib/errores";
 import { type FormatoInforme, leerRangoInforme, nombreArchivoInforme } from "@/lib/informe";
 import type { Rango } from "@/lib/periodos";
 import { RUTAS } from "@/lib/rutas";
 
 const TIPOS: Record<FormatoInforme, string> = { pdf: "application/pdf", csv: "text/csv" };
-
-function descargar(archivo: File) {
-  const url = URL.createObjectURL(archivo);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = archivo.name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
-/** En el celular (iPhone sobre todo) se comparte: WhatsApp, Mail, Archivos… */
-const puedeCompartir = (archivo: File) =>
-  typeof navigator.canShare === "function" && navigator.canShare({ files: [archivo] });
 
 /**
  * Informe para el contador: el dueño elige desde y hasta y lo baja en PDF o en
@@ -78,16 +64,6 @@ export function ExportarCaja({ rango, hoy }: { rango: Rango; hoy: string }) {
         toast.error("No se pudo generar el informe. Revisá la conexión y probá de nuevo.");
       }
     });
-  }
-
-  async function compartir(archivo: File) {
-    try {
-      await navigator.share({ files: [archivo], title: archivo.name });
-    } catch (e) {
-      // Cerrar la hoja de compartir no es un error.
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      descargar(archivo);
-    }
   }
 
   return (

@@ -15,6 +15,7 @@ export const RUTAS = {
   registrar: "/panel/registrar",
   turnos: "/turnos",
   agenda: "/panel/agenda",
+  historia: "/panel/agenda/historia",
   horarios: "/panel/agenda/horarios",
   servicios: "/panel/agenda/servicios",
 } as const;

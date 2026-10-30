@@ -200,6 +200,13 @@ Auditoría del 23/10/2026 (permisos/RLS y entrada/autenticación). Lo que se cam
 - Un corte de mensualidad también deja "atendido" el turno de esa hora, como un corte común.
 - En la caja y en el informe del contador, el cobro figura como "Mensualidad (4 cortes)" con su monto, y cada corte como "Corte de mensualidad 2/4", sin monto.
 
+## Imagen para historia de Instagram
+
+- En la **Agenda**, con un barbero y un día elegidos (de hoy a 13 días), **"Imagen para historia"** genera un PNG de 1080 × 1920 con sus **horarios libres**: los mismos que ve el cliente al sacar turno, con la hora mínima de anticipación ya descontada. Se ve una vista previa y en el celular se comparte directo (Instagram, WhatsApp); en la compu se descarga. El empleado genera la suya; el dueño, la de cualquier barbero.
+- Diseño aprobado con boceto: marca, día, título con una palabra en neón ("Turnos hoy", "Turnos mañana", "Turnos disponibles"; con 3 o menos, "Últimos turnos" con pastillas grandes), "con [nombre]", los horarios en pastillas oro y "Reservá desde la app" con la web y el Instagram. Arriba y abajo queda libre lo que tapa Instagram, y el sticker de link se agrega al subirla (una imagen no lleva links).
+- Las pastillas se achican para que entren todos los horarios. Si hay más de 28, se muestran 27 y "y N más". Sin horarios libres no se genera: avisa "No quedan horarios libres ese día".
+- Se dibuja en el servidor con `next/og`, como la imagen OG. Se agregó Instrument Sans estática (regular y semibold, `src/assets`, OFL) porque `next/og` no lee las fuentes de `next/font`.
+
 ## Limitaciones conocidas
 
 - **Después de un reseteo, un token ya emitido vale hasta 1 hora.** El reseteo borra todas las sesiones (ninguna puede renovarse), pero el access token que una sesión vieja ya tenía sigue siendo válido hasta que vence (`jwt_expiry`, 1 h). Con las claves JWT "legacy" (simétricas) la app lo rechaza enseguida, porque `getClaims()` le pregunta a Supabase Auth y la sesión ya no existe; con claves asimétricas, y por la API REST directa, vale hasta que vence. En esa hora no puede hacer nada útil: la app la manda al cambio obligatorio, que pide la temporal, y la base no le deja reservar, cancelar ni ver su turno. Sí podría leer por la API su propio historial de cortes (no se bloqueó en el RLS para no sumar una consulta a cada lectura).

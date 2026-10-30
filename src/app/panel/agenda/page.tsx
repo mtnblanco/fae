@@ -5,6 +5,7 @@ import { EncabezadoPagina } from "@/components/comunes/encabezado-pagina";
 import { EstadoVacio } from "@/components/comunes/estado-vacio";
 import { ActivarNotificaciones } from "@/components/panel/activar-notificaciones";
 import { ActualizadorAgenda } from "@/components/panel/agenda/actualizador-agenda";
+import { BotonHistoria } from "@/components/panel/agenda/boton-historia";
 import { DiasAgenda } from "@/components/panel/agenda/dias-agenda";
 import { type FilaVista, ListaAgenda } from "@/components/panel/agenda/lista-agenda";
 import { SelectorBarbero } from "@/components/panel/agenda/selector-barbero";
@@ -121,6 +122,10 @@ export default async function PaginaAgenda({ searchParams }: PageProps<"/panel/a
         titulo="Agenda"
         acciones={
           <>
+            {/* De un barbero y de hoy en adelante (dentro de los días que se reservan). */}
+            {unico && pedida >= hoy && dias.slice(0, TURNOS.diasVentana).includes(pedida) ? (
+              <BotonHistoria key={`${unico.id}-${pedida}`} barberoId={unico.id} fecha={pedida} />
+            ) : null}
             <Button asChild variant="outline" size="sm" className="h-11">
               <Link href={linkServicios}>
                 <Scissors aria-hidden />
